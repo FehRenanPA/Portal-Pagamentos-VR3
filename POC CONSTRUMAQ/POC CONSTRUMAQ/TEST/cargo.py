@@ -1,10 +1,12 @@
 
 
 class Funcionario:
-    def __init__(self, name, numero_cpf, chave_pix,valor_hora_base, valor_adicional_noturno, valor_hora_extra_um,
-    valor_hora_extra_dois, valor_repouso_remunerado,valor_ferias, valor_antecipa_ferias, valor_decimo_terceiro, valor_antecipa_salario, 
+
+    def __init__(self, name, nome_funcao, numero_cpf, chave_pix,valor_hora_base, valor_adicional_noturno, valor_hora_extra_um,
+    valor_hora_extra_dois, valor_repouso_remunerado,valor_ferias, valor_um_terco_ferias, valor_decimo_terceiro, valor_antecipa_salario, 
     pagamento_fgts, desconto_inss, desconto_refeicao, desconto_transporte):
         self.name = name
+        self.nome_funcao= nome_funcao
         self.numero_cpf= numero_cpf
         self.chave_pix = chave_pix
         self.valor_hora_base = valor_hora_base
@@ -44,7 +46,7 @@ class Funcionario:
    
 
 def __repr__(self):
-        return (f"Funcionario(nome='{self.nome}', numero_cpf='{self.numero_cpf}', chave_pix='{self.chave_pix}', valor_hora_base={self.valor_hora_base}, "
+        return (f"Funcionario(nome='{self.nome}', nome_funcao'{self.nome_funcao}', numero_cpf='{self.numero_cpf}', chave_pix='{self.chave_pix}', valor_hora_base={self.valor_hora_base}, "
             f"repouso_remunerado={self.valor_repouso_remunerado}, valor_hora_extra_um={self.valor_hora_extra_um}, "
             f"valor_hora_extra_dois={self.valor_hora_extra_dois}, adicional_noturno={self.valor_adicional_noturno}, "
             f"valor_ferias={self.valor_ferias}, valor_antecipa_ferias={self.valor_antecipa_ferias}, "

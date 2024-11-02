@@ -86,6 +86,22 @@ label {
     outline: none; /* Remove a borda de foco */
     box-shadow: none; /* Remove sombra de foco */
 }
+/* Posiciona o botão no lado esquerdo e adiciona estilo */
+.baixar-excel-botao {
+    background-color: #4CAF50; /* Cor verde */
+    color: white;
+    padding: 5px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    scroll-margin-right: 0; /* Mantém o botão à esquerda */
+}
+
+.baixar-excel-botao:hover {
+    background-color: #45a049; /* Cor de fundo ao passar o mouse */
+}
+
 
 input[type="text"],
 input[type="number"],
@@ -251,7 +267,7 @@ li {
 
 }
 #lista .form-container {
-    padding: 40px; /* Espaçamento interno */
+    padding: 20px; /* Espaçamento interno */
     margin: 0px; /* Margem externa */
     height: auto; /* Ajusta a altura conforme necessário */
     width: calc(100% - 10px); /* Define a largura, garantindo que não fique colado na borda */

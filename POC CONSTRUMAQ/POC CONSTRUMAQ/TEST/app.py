@@ -1,8 +1,5 @@
-from flask import Flask, request, jsonify, render_template, send_file
+from flask import Flask, request, jsonify, render_template, send_file, abort
 from datetime import datetime
-#from firebase_config import *  # Importa a configuração do Firebase
-#from firebase_admin import firestore
-#from flask_cors import CORS
 from gerar_sub_total_um import Sub_total_um
 from gerador_olerite import Gerar_olerite
 from criar_cargo import CriarFuncionario
@@ -12,6 +9,8 @@ import time
 from flask import Flask
 from flask_cors import CORS
 import logging
+from flask import Flask, send_from_directory
+import uuid
 
 # Configuração do logger
 logging.basicConfig(level=logging.DEBUG)
@@ -21,41 +20,38 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-
-# Obtém uma referência ao Firestore
-#db = firestore.client()#
-
-#Criação e exibição dos dados dos cagos na tela
 class CriarFuncionario:
-    
-    #Carregar dados cadastrados na tabela no front
-    @staticmethod
-    def carregar_funcionarios():
-        """Carrega os cargos do arquivo JSON."""
-        if os.path.exists('funcionario.json'):
-            with open('funcionario.json', 'r') as file:
-                try:
-                    return json.load(file)
-                except json.JSONDecodeError:
-                    # Em caso de erro no arquivo JSON, retorna um dicionário vazio.
-                    print("Erro ao ler o arquivo funcionario.json. O arquivo está corrompido.")
-                    return {}
-        return {}
+ 
 
-    @staticmethod
-    def salvar_cargos(funcionario_dict):
-        """Salva os cargos no arquivo JSON."""
-        with open('funcionario.json', 'w') as file:
-            json.dump(funcionario_dict, file, indent=4)  # Adiciona indentação para legibilidade.
+        @app.route('/api/funcionarios', methods=['GET'])
+        def get_all_funcionarios():
+            """Retorna todos os funcionários."""
+            return jsonify(funcionario_dict), 200
+        #Carregar dados cadastrados na tabela no front
+        @staticmethod
+        def carregar_funcionarios():
+            """Carrega os cargos do arquivo JSON."""
+            if os.path.exists('funcionario.json'):
+                with open('funcionario.json', 'r') as file:
+                    try:
+                        return json.load(file)
+                    except json.JSONDecodeError:
+                        # Em caso de erro no arquivo JSON, retorna um dicionário vazio.
+                        print("Erro ao ler o arquivo funcionario.json. O arquivo está corrompido.")
+                        return {}
+            return {}
 
-# Carrega cargos inicialmente
-funcionario_dict = CriarFuncionario.carregar_funcionarios()
+        @staticmethod
+        def salvar_cargos(funcionario_dict):
+                    """Salva os cargos no arquivo JSON."""
+                    with open('funcionario.json', 'w') as file:
+                        json.dump(funcionario_dict, file, indent=4)  # Adiciona indentação para legibilidade.
+    # Carrega cargos inicialmente
+funcionario_dict = CriarFuncionario.carregar_funcionarios()                    
 
 
-@app.route('/')
-def index():
-    """Renderiza a página inicial."""
-    return render_template('index.html')
+## --------> Criar cadastro do funcionario 
+
 
 
 ##Criação de Funcionario
@@ -119,6 +115,44 @@ def funcionarios():
             
             print(f"Nome do Funcionario: '{nome}'")  # Log para verificar o valor de nome_cargo
 
+@app.route('/api/criar_funcionario', methods=['POST'])
+def criar_funcionario():
+    try:
+        data = request.json
+        app.logger.info(f"Dados recebidos para criação de funcionário: {data}")
+
+        required_fields = ['nome_funcionario', 'nome_funcao', 'numero_cpf', 'chave_pix', 'valor_hora_base', 
+                           'valor_hora_extra_um', 'valor_hora_extra_dois', 'adicional_noturno', 
+                           'repouso_remunerado', 'valor_ferias', 'valor_um_terco_ferias', 
+                           'valor_decimo_terceiro', 'pagamento_fgts', 'desconto_inss', 
+                           'desconto_refeicao', 'desconto_transporte']
+
+        if not data or any(field not in data for field in required_fields):
+            return jsonify({'error': 'Dados obrigatórios faltando!'}), 400
+
+        # Gera um ID único para o novo funcionário
+        funcionario_id = str(uuid.uuid4())
+
+        # Adiciona o novo funcionário ao dicionário com o ID como chave
+        funcionario_dict[funcionario_id] = {
+            'nome_funcionario': data['nome_funcionario'],
+            'nome_funcao': data['nome_funcao'],
+            'numero_cpf': data['numero_cpf'],
+            'chave_pix': data['chave_pix'],
+            'valor_hora_base': data['valor_hora_base'],
+            'valor_hora_extra_um': data['valor_hora_extra_um'],
+            'valor_hora_extra_dois': data['valor_hora_extra_dois'],
+            'adicional_noturno': data['adicional_noturno'],
+            'repouso_remunerado': data['repouso_remunerado'],
+            'valor_ferias': data['valor_ferias'],
+            'valor_um_terco_ferias': data['valor_um_terco_ferias'],
+            'valor_decimo_terceiro': data['valor_decimo_terceiro'],
+            'pagamento_fgts': data['pagamento_fgts'],
+            'desconto_inss': data['desconto_inss'],
+            'desconto_refeicao': data['desconto_refeicao'],
+            'desconto_transporte': data['desconto_transporte']
+        }
+
             # Atualiza o dicionário de funcionarios
             funcionario_dict[nome] = {
                 'numero_cpf': data['numero_cpf'],
@@ -145,26 +179,34 @@ def funcionarios():
             print(f"Erro ao cadastrar cargo: {e}")
             return jsonify({"message": "Erro ao cadastrar cargo!"}), 500
 
+
     elif request.method == 'GET':
         return jsonify(funcionario_dict)
 
-#Editar Funcionario 
+        app.logger.info(f'Funcionário {data["nome_funcionario"]} criado com sucesso com ID: {funcionario_id}.')
+        return jsonify({'message': 'Funcionário criado com sucesso!', 'data': funcionario_dict[funcionario_id]}), 201
 
-@app.route('/api/funcionario/<string:nomeFuncionario>', methods=['PUT'])
-def editar_funcionario(nomeFuncionario):
-    logger.debug(f'Tentando atualizar o funcionário: {nomeFuncionario}')
-    # Verifica se o funcionário existe
+    except Exception as e:
+        app.logger.error(f'Erro ao criar funcionário: {str(e)}')
+        return jsonify({'error': 'Erro interno do servidor.'}), 500
 
-    funcionarios_db = funcionario_dict
+
     
-    logger.warning(f'Funcionário {nomeFuncionario} não encontrado')
-    if nomeFuncionario not in funcionarios_db:
 
+
+## --------> Editar o cadastro do Funcionario 
+
+@app.route('/api/funcionario/<string:funcionario_id>', methods=['PUT'])
+def editar_funcionario(funcionario_id):
+    logger.debug(f'Tentando atualizar o funcionário com id: {funcionario_id}')
+
+    # Verifica se o ID é nome (antigo) ou uid (novo)
+    if funcionario_id not in funcionario_dict:
+        logger.warning(f'Funcionário com id {funcionario_id} não encontrado')
         return jsonify({'message': 'Funcionário não encontrado'}), 404
 
-    # Obtém os dados do funcionário a partir da requisição
     data = request.json
-    logger.debug(f'Dados recebidos para atualização: {data}')
+
 
     # Atualiza os dados do funcionário
 
@@ -188,9 +230,36 @@ def editar_funcionario(nomeFuncionario):
 
 
 
+    # Checa se é um registro antigo sem UID
+    if not isinstance(funcionario_id, str) or len(funcionario_id) != 36:
+        # Criar um novo UID para o registro
+        novo_uid = str(uuid.uuid4())
+        funcionario_dict[novo_uid] = funcionario_dict.pop(funcionario_id)
+        funcionario_dict[novo_uid]["nome_funcionario"] = funcionario_id  # Mantém o nome como `nome_funcionario`
+        funcionario_id = novo_uid  # Atualiza para a nova chave UID
+    
+    funcionario = funcionario_dict[funcionario_id]
+    
+    # Verifica e adiciona campo `nome_funcao` se estiver ausente
+    funcionario.setdefault('nome_funcao', data.get('nome_funcao', ''))
+
+    # Atualiza os dados com os valores recebidos
+    campos = ['nome_funcionario', 'nome_funcao', 'numero_cpf', 'chave_pix', 'valor_hora_base',
+              'valor_hora_extra_um', 'valor_hora_extra_dois', 'adicional_noturno', 'repouso_remunerado',
+              'valor_ferias', 'valor_um_terco_ferias', 'valor_decimo_terceiro', 'pagamento_fgts', 
+              'desconto_inss', 'desconto_refeicao', 'desconto_transporte']
+    
+    for campo in campos:
+        if campo in data:
+            funcionario[campo] = data[campo]
+    
+    CriarFuncionario.salvar_cargos(funcionario_dict)
+    logger.info(f'Funcionário {funcionario_id} atualizado com sucesso: {funcionario}')
+    return jsonify({'message': 'Funcionário atualizado com sucesso', 'data': funcionario}), 200
 
    
- # Metodo criar funcionario e o gatilho para gerar o olerite #
+## --------> Cria o funcionario e gera o recibo
+
 @app.route('/api/criar_recibo', methods=['POST'])
 def criar_recibo():
         
@@ -240,12 +309,11 @@ def criar_recibo():
         data = request.get_json()  # Ou request.form se for um form HTML
         print(f"Dados da requisição: {data}")
 
-        funcionario = Sub_total_um(data['nome_cargo'], funcionario_id, data['data_inicio'], data['data_fim'], data['data_pagamento'])
+        funcionario = Sub_total_um(data['nome_cargo'], funcionario_id , data['data_inicio'], data['data_fim'], data['data_pagamento'])
 
         # Adicionando as horas e outros dados   
         
         funcionario.adicionar_horas_trabalhadas(data['horas_trabalhadas'])
-        ##funcionario.adicionar_horas_repouso(data['repouso_remunerado'])
         funcionario.adicionar_horas_noturnas(data['horas_noturnas'])
         funcionario.adicionar_horas_extras_um(data['horas_extras_um'])
         funcionario.adicionar_horas_extras_dois(data['horas_extras_dois'])
@@ -259,17 +327,37 @@ def criar_recibo():
         
         return send_file(buffer, as_attachment=True, download_name='recibo.pdf', mimetype='application/pdf')
 
-    
-@app.route('/api/funcionarios/<funcionario_id>', methods=['GET'])
-def get_funcionario(funcionario_id):
-        # Supondo que você tenha um dicionário que armazena os cargos
-    global funcionario_dict 
-    funcionario = funcionario_dict.get(funcionario_id)
 
+
+# --------> Retorna o nome do funcionário e o cargo
+@app.route('/api/funcionarios/<key>', methods=['GET'])
+def get_funcionario(key):
+    funcionario = funcionario_dict.get(key)
+    
+    # Verifica se o funcionário existe
     if funcionario:
-        return jsonify(funcionario)
-    else:
-        return jsonify({'error': 'funcionario não encontrado!'}), 404
+        # Define valores padrão para 'nome_funcionario' e 'nome_funcao' se ausentes
+        funcionario.setdefault('nome_funcionario', 'Nome não cadastrado')
+        funcionario.setdefault('nome_funcao', 'Função não cadastrada')
+        return jsonify(funcionario), 200
+    
+    return jsonify({'error': 'Funcionário não encontrado'}), 404
+
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+@app.route('/baixar_excel', methods=['GET'])
+def baixar_excel():
+    # Caminho completo do arquivo
+    diretorio = os.path.join(app.root_path, 'static')
+    caminho_arquivo = os.path.join(diretorio, 'dados_de_pagamento.xlsx')
+    
+    # Verifica se o arquivo existe
+    if not os.path.exists(caminho_arquivo):
+        abort(404, "Arquivo não encontrado")
+
+    # Envia o arquivo para download, especificando o tipo de conteúdo
+    return send_file(caminho_arquivo, as_attachment=True, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
 
 
 

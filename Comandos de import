@@ -15,9 +15,21 @@ pip install Flask Flask-Cors
 ##Gerar PDF##
 python get-pip.py
 
+<<<<<<< HEAD
 ##Request##
 pip install requests
 
+=======
+### Para o Excell
+pip install openpyxl
+pip install pandas
+
+##Request##
+pip install requests
+
+##Gerar o id
+import uuid
+>>>>>>> 7032577 (Versão com ajuste de totalidade de cadastros, extração de excell, possibilidade de editar nome e inclusão do cargo/funçao)
 
 ##Comando para installar tudo se tiver o requirements""
 

@@ -137,7 +137,6 @@ class Sub_total_um:
         
         ##Calculo par somar ou subtrair a correção
         sub_total_int = sub_total_dois
-        sub_total_unico = (sub_total_dois  - sub_total_dois_seis - sub_total_dois_sete - sub_total_dois_oito)
         
         if self.valor_diarias == 0:
             self.mais = 0
@@ -157,7 +156,7 @@ class Sub_total_um:
         sub_total_dois_dez =  self.correcao_negativa + self.menos 
        
         
-        sub_total_tres =(sub_total_dois  + sub_total_dois_nove - sub_total_dois_dez)
+        sub_total_tres =(sub_total_dois - sub_total_dois_seis - sub_total_dois_sete - sub_total_dois_oito + sub_total_dois_nove - sub_total_dois_dez)
 
         
         
@@ -179,6 +178,5 @@ class Sub_total_um:
         'sub_total_dois_oito' : sub_total_dois_oito,
         'sub_total_dois_nove' : sub_total_dois_nove,
         'sub_total_dois_dez' : sub_total_dois_dez,
-        'sub_total_unico': sub_total_unico,
-        'sub_total_dois_dez' : sub_total_dois_dez,
+        
 }
