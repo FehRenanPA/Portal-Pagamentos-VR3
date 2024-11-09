@@ -106,7 +106,7 @@
                         const chavePix = funcionario.chave_pix
                         const valorHoraBase = funcionario.valor_hora_base
                         const valorHoraExtraUm = funcionario.valor_hora_extra_um
-                        const valorHoraExtraDois = funcionario.horas_extras_dois
+                        const valorHoraExtraDois = funcionario.valor_horas_extras_dois
                         const adicionalNoturno = funcionario.adicional_noturno
                         const repousoRemunerado = funcionario.repouso_remunerado
                         const valorFerias = funcionario.valor_ferias
@@ -207,7 +207,7 @@ function editarFuncionarioModal(uidFuncionario, nomeFuncionario, nomefuncao, cpf
     if (editForm) {
         editForm.addEventListener('submit', async function(event) {
             event.preventDefault(); // Impede o envio padrão do formulário  
->>>>>>> 7032577 (Versão com ajuste de totalidade de cadastros, extração de excell, possibilidade de editar nome e inclusão do cargo/funçao)
+
 
             const formData = {
                 nome_funcionario: document.getElementById('nome_funcionario').value.trim(),
@@ -296,6 +296,7 @@ function editarFuncionarioModal(uidFuncionario, nomeFuncionario, nomefuncao, cpf
             valor_ferias: parseFloat(document.getElementById('valor_ferias_c').value) || 0,
             valor_um_terco_ferias: parseFloat(document.getElementById('valor_um_terco_ferias_c').value) || 0,
             nome_funcao: document.getElementById('nome_funcao_c').value.trim(),
+            equipe: document.getElementById('equipe_c').value.trim(),
         };
 
 
@@ -579,4 +580,6 @@ function editarFuncionarioModal(uidFuncionario, nomeFuncionario, nomefuncao, cpf
 
     
 
-};
+});
+    }
+    

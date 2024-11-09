@@ -12,7 +12,7 @@ h1 {
 }
 h2 {
     text-align: center ;
-    font-size: 3rem; /* Aumenta o tamanho do título */
+    font-size: 1.7rem; /* Aumenta o tamanho do título */
     color: rgb(15, 15, 15);
     
 }
@@ -35,7 +35,7 @@ td{
 }
 .tab-buttons {
     text-align: center;
-    margin-bottom: -60px; /* Aumenta a margem inferior */
+    margin-bottom: 20px; /* Aumenta a margem inferior */
 }
 
 
@@ -55,16 +55,16 @@ td{
 
 .form-container {
     background-color: rgb(253, 253, 253);
-    padding: 200px; /* Aumenta o padding do container de formulário */
+    padding: 50px 250px 80px 250px; /* Aumenta o padding do container de formulário */
     border-radius: 30px;
     box-shadow: 0 5px 5px rgba(0, 0, 0, 0.2); /* Aumenta a sombra */
     max-width: 1000px; /* Aumenta a largura máxima do formulário */
-    margin: -30px auto; /* Aumenta a margem superior e inferior */
+    margin: 10px auto; /* Aumenta a margem superior e inferior */
 }
 
 /*Letras*/
 .form-group {
-    margin-bottom: 15px; /* Aumenta o espaço entre os campos do formulário */
+    margin-bottom: 40px; /* Aumenta o espaço entre os campos do formulário */
     font-weight: bold; 
 }
 label {
@@ -78,7 +78,7 @@ label {
 .input-row {
     display: flex;
     justify-content: space-between; /* Espaço entre os itens */
-    margin-bottom: 10px; /* Espaçamento entre linhas */
+    margin-bottom: -20px; /* Espaçamento entre linhas */
     
     
 }
@@ -94,8 +94,21 @@ label {
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 25px;
     scroll-margin-right: 0; /* Mantém o botão à esquerda */
+}
+.gerar_etiquetas {
+    background-color: #636e6e; /* Cor verde */
+    color: white;
+    padding: 5px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 25px;
+    scroll-margin-right: 0; /* Mantém o botão à esquerda */
+}
+.gerar_etiquetas:hover {
+    background-color: #83898b; /* Cor de fundo ao passar o mouse */
 }
 
 .baixar-excel-botao:hover {
@@ -267,16 +280,19 @@ li {
 
 }
 #lista .form-container {
-    padding: 20px; /* Espaçamento interno */
+    padding: 20px 10px 10px 10px; /* Espaçamento interno */
     margin: 0px; /* Margem externa */
     height: auto; /* Ajusta a altura conforme necessário */
-    width: calc(100% - 10px); /* Define a largura, garantindo que não fique colado na borda */
+    width: calc(100% + 20px); /* Define a largura, garantindo que não fique colado na borda */
     max-width: 2600px; /* Largura máxima, ajuste conforme necessário */
     box-sizing: border-box; /* Inclui padding e borda na largura total */
     border: 1px solid #ddd; /* Para visualização (opcional) */
     overflow-y: auto; /* Adiciona rolagem vertical se necessário */
 }
 
+.select2-selection--single {
+    display: none; /* Oculta o botão por padrão */
+}
 
 ul {
     list-style-type: none;
@@ -363,14 +379,14 @@ li {
 
 .tab-buttons button {
     /* Estilo existente */
-    padding: 10px 40px; 
-    margin: 0 10px; 
+    padding: 10px 70px; 
+    margin: 0 -1px; 
     font-size: 2rem; 
     cursor: pointer;
     background-color: #5b89b4;
     color: rgb(15, 15, 15);
     border: none;
-    border-radius: 10px; 
+    border-radius: 5px; 
     font-weight: bold
 }
 

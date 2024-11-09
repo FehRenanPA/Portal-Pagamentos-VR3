@@ -24,6 +24,9 @@ pip install requests
 pip install openpyxl
 pip install pandas
 
+#gerar o doc
+pip install python-docx
+
 ##Request##
 pip install requests
 

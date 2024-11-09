@@ -23,6 +23,7 @@ class Sub_total_um:
         self.valor_ferias = 0
         self.correcao_positiva = 0
         self.correcao_negativa = 0
+        self.parcela_vale=0
         self.valor_diarias = 0
         self.mais = 0
         self.menos = 0
@@ -63,7 +64,8 @@ class Sub_total_um:
     def adicionar_valor_por_hora(self,valor):    
         self.valor_diarias += valor
                
-
+    def adicionar_pagamento_vale(self,valor):    
+        self.parcela_vale += valor
         
     def valida_funcionario(self):
         print(f"Cargos disponíveis: {list(funcionario_dict.keys())}")
@@ -154,10 +156,11 @@ class Sub_total_um:
           
         sub_total_dois_nove = self.correcao_positiva + self.mais 
         sub_total_dois_dez =  self.correcao_negativa + self.menos 
+        sub_total_dois_onze = self.parcela_vale
        
+        sub_total_tres =(sub_total_dois - sub_total_dois_seis - sub_total_dois_sete - sub_total_dois_oito + sub_total_dois_nove - sub_total_dois_dez - sub_total_dois_onze)
         
-        sub_total_tres =(sub_total_dois - sub_total_dois_seis - sub_total_dois_sete - sub_total_dois_oito + sub_total_dois_nove - sub_total_dois_dez)
-
+        
         
         
         return {
@@ -178,5 +181,7 @@ class Sub_total_um:
         'sub_total_dois_oito' : sub_total_dois_oito,
         'sub_total_dois_nove' : sub_total_dois_nove,
         'sub_total_dois_dez' : sub_total_dois_dez,
+        'sub_total_dois_onze' : sub_total_dois_onze,
+        
         
 }

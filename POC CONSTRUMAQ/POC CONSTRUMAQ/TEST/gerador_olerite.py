@@ -41,6 +41,8 @@ class Gerar_olerite:
         
         # Dados a serem exportados para Excel
         nome = self.funcao.funcionario['nome_funcionario']
+        nome_funcao = self.funcao.funcionario['nome_funcao']
+        equipe = self.funcao.funcionario['equipe']
         cpf = self.funcao.funcionario['numero_cpf']
         chave_pix = self.funcao.funcionario['chave_pix']
         valor_total = round(total_pagamento['sub_total_tres'], 2) 
@@ -64,14 +66,16 @@ class Gerar_olerite:
             for row in sheet.iter_rows(min_row=2):  # Ignora o cabeçalho
                 if row[0].value == nome:  # Verifica se o nome já está presente
                     # Substitui a linha existente
-                    row[1].value = cpf
-                    row[2].value = chave_pix
-                    row[3].value = valor_total
-                    row[4].value = date_pagamento
+                    row[1].value = nome_funcao
+                    row[2].value = equipe
+                    row[3].value = cpf
+                    row[4].value = chave_pix
+                    row[5].value = valor_total
+                    row[6].value = date_pagamento
                     break
             else:
                 # Se o nome não foi encontrado, adiciona uma nova linha
-                sheet.append([nome, cpf, chave_pix, valor_total, date_pagamento])
+                sheet.append([nome, nome_funcao, equipe, cpf, chave_pix, valor_total, date_pagamento])
 
         else:
             # Se o arquivo não existir, cria um novo
@@ -80,11 +84,11 @@ class Gerar_olerite:
             sheet.title = "Dados do Funcionário"
             
             # Adiciona cabeçalhos
-            headers = ["Nome", "CPF", "Chave PIX", "Valor Total", "Data de Pagamento"]
+            headers = ["Nome", "Funcao", "equipe","CPF", "Chave PIX", "Valor Total", "Data de Pagamento"]
             sheet.append(headers)
             
             # Adiciona novos dados na planilha
-            data = [nome, cpf, chave_pix, valor_total, date_pagamento]
+            data = [nome, nome_funcao, equipe, cpf, chave_pix, valor_total, date_pagamento]
             sheet.append(data)
 
         # Salva o arquivo Excel
@@ -100,12 +104,12 @@ class Gerar_olerite:
         
         header = [
             ["VR3 LTDA", "", ""],
-            ["CNPJ:12.507.345/0001-15", "", ""],
+            ["CNPJ: 12.507.345/0001-15", "", ""],
             ["", "", ""],
             ["", "", ""],
             ["R E C I B O","", f"VALOR: R$ {valor_sub_total_tres:.2f}"],
             ["", "", ""],
-            [f"RECEBI DE VR3 LTDA. A QUANTIA DE R$: {total_pagamento['sub_total_tres']:.2f}","",""],
+            [f"RECEBI DE VR3 LTDA A QUANTIA DE R$: {total_pagamento['sub_total_tres']:.2f}","",""],
 
             ["", "", ""]
             
@@ -144,6 +148,7 @@ class Gerar_olerite:
             [f"DESC.TRANSPORTE ({self.funcao.funcionario['desconto_transporte']:.2f}% de Hs Trab + Repouso):","","", f"{total_pagamento['sub_total_dois_oito']:.2f}"],
             [f"COREÇÃO (+) :","","", f"{total_pagamento['sub_total_dois_nove']:.2f}"],
             [f"CORREÇÃO (-):","","", f"{total_pagamento['sub_total_dois_dez']:.2f}"],
+            [f"PARC. ADIANTAMENTO SALARIAL (-):","","", f"{total_pagamento['sub_total_dois_onze']:.2f}"],
             [f"SALDO A RECEBER:","","", f"{total_pagamento['sub_total_tres']:.2f}"],
             ["Obs: Comunicamos que providencie sua documentação completa para a realização do exame adimissional (ASO) e", "",""],
             ["Registro Legal  na Empresa.", "", ""]
@@ -159,15 +164,15 @@ class Gerar_olerite:
                     ('FONTSIZE', (0, 0), (-1, -1), 12), # Tamanho da fonte
                     ('BOTTOMPADDING', (0, 0), (-1, 0), 12),  # Padding na parte inferior do cabeçalho   
                     ('FONTSIZE', (0, -1), (-1, -1), 12),  # Tamanho da fonte para a última linha
-                    ('FONTSIZE', (0, 19), (-1, 19), 10),  # Tamanho da fonte para a linha 20 (índice 19)
-                    ('FONTSIZE', (0, 20), (-1, 20), 10),  # Tamanho da fonte para a linha 21 (índice 20)
-                     ('ALIGN', (0, 19), (-1, 19), 'LEFT'),  # Alinhamento à esquerda para a linha 20
-                     ('SPAN', (0, 19), (3, 19)),  # Faz com que a linha 20 ocupe as quatro colunas
+                    ('FONTSIZE', (0, 20), (-1, 20), 10),  # Tamanho da fonte para a linha 20 (índice 19)
+                    ('FONTSIZE', (0, 21), (-1, 21), 10),  # Tamanho da fonte para a linha 21 (índice 20)
+                    ('ALIGN', (0, 20), (-1, 20), 'LEFT'),  # Alinhamento à esquerda para a linha 20
+                    ('SPAN', (0,20), (3, 20)),  # Faz com que a linha 20 ocupe as quatro colunas
                     # Negrito para "SUB-TOTAL 1" e "SUB-TOTAL 2" e a primeira Linha
                     ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),  # Negrito para 1 linhas'
                     ('FONTNAME', (0, 12), (-1, 12), 'Helvetica-Bold'), # Negrito para "SUB-TOTAL 2"
                     ('FONTNAME', (0, 7), (-1, 7), 'Helvetica-Bold'),  # Negrito para "SUB-TOTAL 1"
-                    ('FONTNAME', (0, 18), (-1, 18), 'Helvetica-Bold')
+                    ('FONTNAME', (0, 19), (-1, 19), 'Helvetica-Bold') # Negrito para "SUB-TOTAL 3"
                 
                     
                     
