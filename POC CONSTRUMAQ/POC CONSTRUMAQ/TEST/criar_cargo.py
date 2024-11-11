@@ -18,6 +18,8 @@ class CriarFuncionario:
     @staticmethod
     def criar_funcionario(data):
         name = data['name']
+        nome_funcao = data['nome_funcao']
+        equipe=data['equipe']
         numero_cpf = data['numero_cpf']
         chave_pix = data['chave_pix']
         valor_hora_base = round(float(data['valor_hora_base']), 2)
@@ -34,7 +36,7 @@ class CriarFuncionario:
         desconto_refeicao = round(float(data['desconto_refeicao']), 2)
         desconto_transporte = round(float(data['desconto_transporte']), 2)
 
-        funcionario = Funcionario(name,numero_cpf,chave_pix,valor_hora_base, adicional_noturno, valor_hora_extra_um,
+        funcionario = Funcionario(name,nome_funcao,equipe, numero_cpf,chave_pix,valor_hora_base, adicional_noturno, valor_hora_extra_um,
                       valor_hora_extra_dois, repouso_remunerado, valor_ferias,
                       valor_antecipa_ferias, valor_decimo_terceiro, valor_antecipa_salario,
                       pagamento_fgts, desconto_inss, desconto_refeicao, desconto_transporte)
@@ -46,6 +48,8 @@ class CriarFuncionario:
     def to_dict(self):
         return {
             'name': self.name,
+            'nome_funcao': self.nome_funcao,
+            'equipe': self.equipe,
             'numero_cpf': self.numero_cpf,
             'chave_pix': self.chave_pix,
             'valor_hora_base': self.valor_hora_base,
@@ -92,7 +96,8 @@ def editar_funcionario():
     
     # Atualizar os valores do funcionário
     funcionario_atual = funcionarios[nome_funcionario]
-    
+    nome_funcao = input(f"Digite a nova funnçao (atual: {funcionario_atual['nome_funcao']}): ") or funcionario_atual['nome_funcao']
+    equipe = input(f"Digite a nova funnçao (atual: {funcionario_atual['equipe']}): ") or funcionario_atual['equipe']
     numero_cpf = input(f"Digite o novo CPF (atual: {funcionario_atual['numero_cpf']}): ") or funcionario_atual['numero_cpf']
     chave_pix = input(f"Digite a nova chave PIX (atual: {funcionario_atual['chave_pix']}): ") or funcionario_atual['chave_pix']
     valor_hora_base = float(input(f"Digite o novo valor da hora base (atual: {funcionario_atual['valor_hora_base']}): ") or funcionario_atual['valor_hora_base'])
@@ -110,6 +115,8 @@ def editar_funcionario():
     
     # Atualizar os dados do funcionário
     funcionarios[nome_funcionario] = {
+        'nome_funcao':nome_funcao,
+        'equioe':equipe,
         'numero_cpf': numero_cpf,
         'chave_pix': chave_pix,
         'valor_hora_base': valor_hora_base,
@@ -158,7 +165,8 @@ def main():
             data['desconto_inss'] = input("Desconto de INSS: ")
             data['desconto_refeicao'] = input("Desconto de refeição: ")
             data['desconto_transporte'] = input("Desconto de transporte: ")
-            CriarFuncionario.criar_cargo(data)
+            
+            CriarFuncionario.criar_funcionario(data)
         elif escolha == '2':
             editar_funcionario()
         elif escolha == '3':
