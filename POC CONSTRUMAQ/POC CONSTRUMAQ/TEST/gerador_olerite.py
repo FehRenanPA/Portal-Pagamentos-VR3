@@ -108,8 +108,8 @@ class Gerar_olerite:
                     ('FONTSIZE', (0, -1), (-1, -1), 12),  # Tamanho da fonte para a última linha
                     ('FONTSIZE', (0, 19), (-1, 19), 10),  # Tamanho da fonte para a linha 20 (índice 19)
                     ('FONTSIZE', (0, 20), (-1, 20), 10),  # Tamanho da fonte para a linha 21 (índice 20)
-                     ('ALIGN', (0, 19), (-1, 19), 'LEFT'),  # Alinhamento à esquerda para a linha 20
-                     ('SPAN', (0, 19), (3, 19)),  # Faz com que a linha 20 ocupe as quatro colunas
+                    ('ALIGN', (0, 19), (-1, 19), 'LEFT'),  # Alinhamento à esquerda para a linha 20
+                    ('SPAN', (0, 19), (3, 19)),  # Faz com que a linha 20 ocupe as quatro colunas
                     # Negrito para "SUB-TOTAL 1" e "SUB-TOTAL 2" e a primeira Linha
                     ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),  # Negrito para 1 linhas'
                     ('FONTNAME', (0, 12), (-1, 12), 'Helvetica-Bold'), # Negrito para "SUB-TOTAL 2"
