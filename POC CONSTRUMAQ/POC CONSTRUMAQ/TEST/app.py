@@ -32,9 +32,12 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
+# Configuração do logging
+logging.basicConfig(level=logging.DEBUG,  # Exibe logs de nível DEBUG e superiores
+                    format='%(asctime)s - %(levelname)s - %(message)s')
+
+
 class CriarFuncionario:
-
-
     
 
         @app.route('/api/funcionarios', methods=['GET'])
@@ -89,7 +92,7 @@ def after_request(response):
 @app.route('/api/gerar-etiquetas', methods=['POST'])
 def gerar_etiquetas():
     data = request.get_json()
-    data_inicio = datetime.strptime(data.get("data_inicio"), "%Y-%m-%d").strftime("%d/%m/%Y")
+    data_inicio = datetime.strptime(data.get("data_inicio"), "%Y-%m-%d").strftime("%d/%m")
     data_fim = datetime.strptime(data.get("data_fim"), "%Y-%m-%d").strftime("%d/%m/%Y")
 
     # Carregar o dicionário de funcionários
@@ -99,14 +102,14 @@ def gerar_etiquetas():
     
 
     # Ordenar os funcionários por nome em ordem alfabética
-    funcionarios_ordenados = sorted(funcionario_dict.values(), key=lambda f: f.get("equipe", ""))
+    funcionarios_ordenados = sorted(funcionario_dict.values(), key=lambda f: f.get("nome_funcionario", ""))
 
     # Configurações básicas da página e das etiquetas
     page_width = 595  # Largura da página A4 em pontos
     page_height = 842  # Altura da página A4 em pontos
     etiqueta_largura = page_width / 2 - 30  # Largura de cada etiqueta (2 colunas)
     etiqueta_altura = 70  # Altura de cada etiqueta
-    margem_superior = page_height - 35
+    margem_superior = page_height - 45
     margem_lateral = 3.5
     max_linhas_por_pagina = 11  # Máximo de linhas por página
 
@@ -125,12 +128,12 @@ def gerar_etiquetas():
        
         nome_funcionario = funcionario.get("nome_funcionario", funcionario.get("numero_cpf", "Nome não disponível"))
         equipe = funcionario.get("equipe", "Equipe Não Cadastrada")
-        etiqueta_texto = f"{equipe}\n{nome_funcionario}\n{nome_funcao}\n{data_inicio} a {data_fim}"
+        etiqueta_texto = f"{""}\n{nome_funcionario}\n{nome_funcao}\n{data_inicio} á {data_fim}"
 
         # Avança para uma nova página se o limite de linhas for atingido
         if linha_atual >= max_linhas_por_pagina:
             c.showPage()
-            c.setFont("Helvetica", 10)
+            c.setFont("Helvetica", 1)
             y = margem_superior
             linha_atual = 0
             col_atual = 0
@@ -424,21 +427,38 @@ def get_funcionario(key):
 
 
 ##----------------------------------> Baixar Excell <-----------------------------------##                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
-@app.route('/baixar_excel', methods=['GET'])
-def baixar_excel():
+# Diretório onde os arquivos estão localizados
+DIRETORIO_ARQUIVOS = os.path.join(app.root_path, 'static') ##Mudar se necessario
+
+
+@app.route('/api/listar_arquivos', methods=['GET'])
+def listar_arquivos():
+    try:
+        logging.info("Requisição recebida na rota '/api/listar_arquivos'.")  # Log de entrada da requisição
+        arquivos = os.listdir(DIRETORIO_ARQUIVOS)
+        # Filtra apenas os arquivos .xlsx
+        arquivos_excel = [arq for arq in arquivos if arq.endswith('.xlsx')]
+        
+        logging.info(f"Arquivos encontrados: {arquivos_excel}")  # Log para exibir os arquivos encontrados
+        
+        return jsonify({'arquivos': arquivos_excel})
+    except Exception as e:
+        
+        logging.error(f"Erro ao listar arquivos: {str(e)}")  # Log de erro caso ocorra algum problema
+        
+        return jsonify({'erro': str(e)}), 500
+
+@app.route('/baixar_excel/<arquivo>', methods=['GET'])
+def baixar_excel(arquivo):
     # Caminho completo do arquivo
-    diretorio = os.path.join(app.root_path, 'static')
-    caminho_arquivo = os.path.join(diretorio, 'dados_de_pagamento.xlsx')
-    
+    caminho_arquivo = os.path.join(DIRETORIO_ARQUIVOS, arquivo)
+
     # Verifica se o arquivo existe
     if not os.path.exists(caminho_arquivo):
         abort(404, "Arquivo não encontrado")
 
     # Envia o arquivo para download, especificando o tipo de conteúdo
-    return send_file(caminho_arquivo, as_attachment=True, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-
-
-#Editar Funcionario 
+    return send_file(caminho_arquivo, as_attachment=True, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') 
 
 @app.route('/api/funcionarios/<int:id>', methods=['PUT'])
 def update_funcionario(id):

@@ -157,6 +157,10 @@ class Sub_total_um:
         sub_total_dois_nove = self.correcao_positiva + self.mais 
         sub_total_dois_dez =  self.correcao_negativa + self.menos 
         sub_total_dois_onze = self.parcela_vale
+        sub_total_bruto = (sub_total_dois - sub_total_dois_seis - sub_total_dois_sete - sub_total_dois_oito + sub_total_dois_nove - sub_total_dois_dez)
+        
+        
+        
        
         sub_total_tres =(sub_total_dois - sub_total_dois_seis - sub_total_dois_sete - sub_total_dois_oito + sub_total_dois_nove - sub_total_dois_dez - sub_total_dois_onze)
         
@@ -182,6 +186,7 @@ class Sub_total_um:
         'sub_total_dois_nove' : sub_total_dois_nove,
         'sub_total_dois_dez' : sub_total_dois_dez,
         'sub_total_dois_onze' : sub_total_dois_onze,
+        'sub_total_bruto': sub_total_bruto,
         
         
 }

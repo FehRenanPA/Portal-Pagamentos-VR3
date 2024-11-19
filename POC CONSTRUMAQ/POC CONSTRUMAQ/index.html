@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 
+
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -31,10 +32,9 @@
     <div id="lista" class="tab active">
         <div class="form-container">
             <h2>Funcionarios Cadastrados</h2>
-            <button class="baixar-excel-botao" onclick="baixarArquivoExcel()" style="float: right;">Baixar Excel</button>
+            <button class="baixar-excel-botao" onclick="abrirModalExcel()" style="float: right;">Baixar Excel</button>
             <!-- Gerar etiquetas -->
             <button class="gerar_etiquetas" onclick="abrirModal()" style="float: right;">Gerar Etiquetas</button>
-
              <!-- Exibir contagem de registros -->
             <h3 id="total-registros">Total: 0</h3>
             <!-- Campo de busca por nome de funcionário -->
@@ -324,9 +324,9 @@
                 </div>
             </div>
         </div>
-        <!-- Botão para abrir o modal -->
-<button onclick="abrirModal()" style="float: right; margin-left: 10px;">Gerar Etiqueta</button>
 
+<!-- Botão para abrir o modal -->
+<button onclick="abrirModal()" style="float: right; margin-left: 10px;">Gerar Etiqueta</button>
 <!-- Modal para Gerar Etiquetas -->
 <div id="modal-gerar-etiqueta" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
     <div style="background-color: white; padding: 20px; border-radius: 10px; max-width: 700px; width: 900%; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
@@ -347,10 +347,35 @@
         </div>
     </div>
 </div>
+<!-- Modal para Baixar Excel -->
+<div id="modal-excel" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
+    <div style="background-color: white; padding: 20px; border-radius: 10px; max-width: 700px; width: 90%; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+        <h2 style="text-align: center;">Baixar Arquivo Excel</h2>
+        
+        <!-- Campo de seleção de arquivos -->
+        <div class="input-row" style="margin-bottom: 20px;">
+            <div class="form-group">
+                <label for="lista-arquivos-excel">Escolha um Arquivo:</label>
+                <select id="lista-arquivos-excel" class="form-control" onchange="exibirBotoesExcel()">
+                    <option value="" disabled selected>Escolha um arquivo</option>
+                    <!-- Arquivos serão carregados aqui -->
+                </select>
+            </div>
+        </div>
+        
+        <!-- Botões "Baixar" e "Cancelar" -->
+        <div id="opcoes-baixar-excel" style="display:none; margin-top: 20px; display: flex; justify-content: flex-start;">
+            <button onclick="baixarArquivoExcelSelecionado()" style="background-color: blue; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-right: 10px;">Baixar</button>
+            <button onclick="fecharModalExcel()" style="background-color: red; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Cancelar</button>
+        </div>
+    </div>
+</div>
 
         <script src="script.js"></script> <!-- Link para o JS --> 
 </body>
 <script>
+
+
    
     function showTab(tab) {
         
@@ -368,14 +393,84 @@
         document.getElementById('name_funcionario').value = '';
         showTab('lista'); // Mostra a aba de cargos ao carregar
     });
-    function baixarArquivoExcel() {
-        // Define a URL do endpoint para download
-        const url = "http://localhost:5000/baixar_excel";
+ //________________________Baixar Excell_________________________________________   
+// Função para abrir o modal de download do Excel
+function abrirModalExcel() {
+    // Exibir o modal
+    document.getElementById("modal-excel").style.display = "flex";
+    
+    // Fazer uma requisição para o backend para listar os arquivos
+    fetch('http://127.0.0.1:5000/api/listar_arquivos')
+        .then(response => {
+            // Verificar se a resposta foi bem-sucedida (status 200)
+            if (!response.ok) {
+                throw new Error('Erro ao carregar os arquivos');
+            }
+            return response.json();  // Converte a resposta para JSON
+        })
+        .then(data => {
+            // Agora, data é o objeto JSON retornado do servidor
+            console.log(data);  // Verifique o que veio no JSON no console
+            const arquivos = data.arquivos;  // A lista de arquivos está em 'arquivos'
+            const select = document.getElementById("lista-arquivos-excel");
 
-        // Redireciona para a URL para iniciar o download
-        window.location.href = url;
+            // Limpa o conteúdo atual da lista
+            select.innerHTML = '<option value="" disabled selected>Escolha um arquivo</option>';
+            
+            // Preenche o select com os arquivos disponíveis
+            arquivos.forEach(arquivo => {
+                const option = document.createElement("option");
+                option.value = arquivo;
+                option.textContent = arquivo;
+                select.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Erro ao carregar os arquivos:', error);
+            alert('Erro ao carregar os arquivos. Tente novamente.');
+        });
+}
+
+// Função para fechar o modal de download do Excel
+function fecharModalExcel() {
+    document.getElementById("modal-excel").style.display = "none";
+}
+
+// Função para exibir os botões de baixar após selecionar um arquivo
+function exibirBotoesExcel() {
+    const select = document.getElementById("lista-arquivos-excel");
+    const botaoBaixar = document.getElementById("opcoes-baixar-excel");
+    
+    if (select.value) {
+        // Exibir os botões "Baixar" e "Cancelar"
+        botaoBaixar.style.display = "block";
+    } else {
+        // Ocultar os botões se nenhum arquivo for selecionado
+        botaoBaixar.style.display = "none";
     }
+}
 
+// Função para baixar o arquivo Excel selecionado
+function baixarArquivoExcelSelecionado() {
+    const select = document.getElementById("lista-arquivos-excel");
+    const arquivoSelecionado = select.value;
+    
+    if (arquivoSelecionado) {
+        // A lógica de download do arquivo pode ser implementada aqui, por exemplo:
+        const url = `http://localhost:5000/baixar_excel/${arquivoSelecionado}`;
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = arquivoSelecionado;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        
+        // Fechar o modal após o download
+        fecharModalExcel();
+    }
+}
+
+//_______________________Lista de Funcionarios ________________________________
     async function fetchCargos() {
         try {
             const response = await fetch('http://127.0.0.1:5000/api/funcionarios'); 
@@ -463,7 +558,7 @@
                         const chavePix = funcionario.chave_pix
                         const valorHoraBase = funcionario.valor_hora_base
                         const valorHoraExtraUm = funcionario.valor_hora_extra_um
-                        const valorHoraExtraDois = funcionario.horas_extras_dois
+                        const valorHoraExtraDois = funcionario.valor_hora_extra_dois
                         const adicionalNoturno = funcionario.adicional_noturno
                         const repousoRemunerado = funcionario.repouso_remunerado
                         const valorFerias = funcionario.valor_ferias

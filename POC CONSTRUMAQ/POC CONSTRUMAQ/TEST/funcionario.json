@@ -2408,7 +2408,7 @@
         "chave_pix": "TEL: (91) 98011-6625",
         "valor_hora_base": 9.01,
         "valor_hora_extra_um": 13.52,
-        "valor_hora_extra_dois": 18.02,
+        "valor_hora_extra_dois": 0,
         "adicional_noturno": 13.51,
         "repouso_remunerado": 9.01,
         "valor_ferias": 8.33,

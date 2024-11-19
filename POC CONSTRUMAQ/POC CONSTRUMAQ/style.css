@@ -61,6 +61,35 @@ td{
     max-width: 1000px; /* Aumenta a largura máxima do formulário */
     margin: 10px auto; /* Aumenta a margem superior e inferior */
 }
+#opcoes-baixar button {
+    padding: 10px 20px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+/* Estilo do botão "Baixar" */
+#opcoes-baixar button:nth-child(1) {
+    background-color: #007bff; /* Cor de fundo azul */
+    color: white;
+}
+
+#opcoes-baixar button:nth-child(1):hover {
+    background-color: #0056b3; /* Cor ao passar o mouse (mais escura) */
+}
+
+/* Estilo do botão "Cancelar" */
+#opcoes-baixar button:nth-child(2) {
+    background-color: #dc3545; /* Cor de fundo vermelha */
+    color: white;
+}
+
+#opcoes-baixar button:nth-child(2):hover {
+    background-color: #c82333; /* Cor ao passar o mouse (mais escura) */
+}
+
+/* Adicionando estilo ao select dentro do modal */
 
 /*Letras*/
 .form-group {

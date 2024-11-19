@@ -7,7 +7,8 @@ from gerar_sub_total_um import Sub_total_um
 from openpyxl import Workbook
 from openpyxl import Workbook, load_workbook
 import os
-
+from openpyxl.styles import Alignment, Font
+from openpyxl.utils import get_column_letter
 class Gerar_olerite:
     def __init__(self, funcao):
         self.funcao = funcao
@@ -16,6 +17,7 @@ class Gerar_olerite:
 
     def gerar_sub_um(self):
         total_pagamento = Sub_total_um.calcular_pagamento_um(self.funcao)
+        
         buffer = BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=A4,
                                 leftMargin=0,  # Margem esquerda
@@ -32,6 +34,9 @@ class Gerar_olerite:
         table = self._create_table(content)
         elements.append(table)
 
+        for i, row in enumerate(content, 1):  # Inicia o contador com 1
+            row.insert(0, i)  # Insere o contador no início da linha
+
         # Rodapé
         self._draw_footer(elements)
 
@@ -42,15 +47,29 @@ class Gerar_olerite:
         # Dados a serem exportados para Excel
         nome = self.funcao.funcionario['nome_funcionario']
         nome_funcao = self.funcao.funcionario['nome_funcao']
-        equipe = self.funcao.funcionario['equipe']
-        cpf = self.funcao.funcionario['numero_cpf']
-        chave_pix = self.funcao.funcionario['chave_pix']
+        cpf = self.formatar_cpf(self.funcao.funcionario['numero_cpf'])  # Formata o CPF
+        valor_bruto = round(total_pagamento['sub_total_bruto'], 2)
+        valor_vale = round(total_pagamento['sub_total_dois_onze'], 2)
         valor_total = round(total_pagamento['sub_total_tres'], 2) 
-        date_pagamento = self.funcao.data_pagamento.strftime("%d/%m/%Y")
+        chave_pix = self.funcao.funcionario['chave_pix']
+        
+        
+        # Verifica se o valor de sub_total_tres é maior que 1 antes de salvar ou atualizar
+        if valor_total < 1:
+            print("Pagamento negativo não será contabilizado no relatório")
+            return buffer  # Retorna o buffer sem salvar no Excel
+        
+        
+        # Formatar a data de início e fim para o nome do arquivo
+        data_inicio = self.funcao.data_inicio.strftime("%d-%m-%Y")
+        data_fim = self.funcao.data_fim.strftime("%d-%m-%Y")
+        
+        # Nome do arquivo com as datas
+        nome_arquivo = f"relatorio_{data_inicio}_a_{data_fim}.xlsx"
         
         # Diretório e nome do arquivo Excel
         diretorio = 'static'
-        arquivo_excel = os.path.join(diretorio, 'dados_de_pagamento.xlsx')
+        arquivo_excel = os.path.join(diretorio, nome_arquivo)
         
         # Cria o diretório "static" se ele não existir
         if not os.path.exists(diretorio):
@@ -64,36 +83,111 @@ class Gerar_olerite:
             
             # Verifica se o nome já existe e substitui os dados, se necessário
             for row in sheet.iter_rows(min_row=2):  # Ignora o cabeçalho
-                if row[0].value == nome:  # Verifica se o nome já está presente
+                if row[1].value == nome:  # Verifica se o nome já está presente
                     # Substitui a linha existente
-                    row[1].value = nome_funcao
-                    row[2].value = equipe
+                    row[2].value = nome_funcao
                     row[3].value = cpf
-                    row[4].value = chave_pix
-                    row[5].value = valor_total
-                    row[6].value = date_pagamento
+                    row[4].value = valor_bruto
+                    row[5].value = valor_vale
+                    row[6].value = valor_total
+                    row[7].value = chave_pix
+                    row[8].value = "o mesmo"
                     break
             else:
                 # Se o nome não foi encontrado, adiciona uma nova linha
-                sheet.append([nome, nome_funcao, equipe, cpf, chave_pix, valor_total, date_pagamento])
-
+                # Calcular o próximo número de linha baseado no maior valor da coluna A
+                max_contador = max([cell.value for cell in sheet['A'] if isinstance(cell.value, int)], default=0)
+                contador_linha = max_contador + 1  # Incrementa 1 ao valor máximo encontrado
+                sheet.append([contador_linha, nome, nome_funcao, cpf, valor_bruto, valor_vale, valor_total, chave_pix, "o mesmo"])
         else:
             # Se o arquivo não existir, cria um novo
             workbook = Workbook()
             sheet = workbook.active
             sheet.title = "Dados do Funcionário"
             
+            data_inicio_formatada = (self.funcao.data_inicio).strftime('%d.%m') 
+            data_fim_formatada = (self.funcao.data_fim).strftime('%d.%m.%Y')
+            
+            headers_geral = [f"RELAÇÃO DE PAGAMENTO  EQUIPE PEDRO DO PERIODO    {data_inicio_formatada}   Á   {data_fim_formatada} "]
+            sheet.append(headers_geral)
+
             # Adiciona cabeçalhos
-            headers = ["Nome", "Funcao", "equipe","CPF", "Chave PIX", "Valor Total", "Data de Pagamento"]
+            headers = ["N°","Nome", "Função","CPF", "Valor", "Desc. Vales", "Liquido","Chave PIX", "Titular"]
             sheet.append(headers)
             
+                # Definir a formatação do cabeçalho (negrito e centralizado)
+            for col in range(1, len(headers) + 1):
+                column_letter = get_column_letter(col)
+                sheet[column_letter + "1"].font = Font(bold=True)
+                sheet[column_letter + "1"].alignment = Alignment(horizontal="left", vertical="center")
+                
             # Adiciona novos dados na planilha
-            data = [nome, nome_funcao, equipe, cpf, chave_pix, valor_total, date_pagamento]
+            contador_linha = 1  # Começa com 1
+            data = [contador_linha, nome, nome_funcao, cpf, valor_bruto, valor_vale, valor_total, chave_pix, "o mesmo"]
             sheet.append(data)
+
 
         # Salva o arquivo Excel
         workbook.save(arquivo_excel)
         return buffer
+    
+    # Função para formatar o CPF no padrão 000.000.000-00
+    def formatar_cpf(self, cpf):
+        # Remove qualquer caractere não numérico
+        cpf = ''.join(filter(str.isdigit, str(cpf)))
+        
+        # Formata o CPF se for válido (11 caracteres)
+        if len(cpf) == 11:
+            return f"{cpf[:3]}.{cpf[3:6]}.{cpf[6:9]}-{cpf[9:]}"
+        else:
+            return cpf  # Caso o CPF não tenha 11 números, retorna ele sem formato
+     
+    def _draw_date_header(self, date, elements):
+        """
+        Adiciona um cabeçalho para a data.
+        """
+        elements.append(f"Data: {date}")
+        elements.append("<br/>")
+
+    def _draw_header(self, elements):
+        data_inicio_formatada = (self.funcao.data_inicio).strftime('%d/%m/%Y') 
+        data_fim_formatada = (self.funcao.data_fim).strftime('%d/%m/%Y')
+         # Texto do cabeçalho
+        header_text = f"Relação de Contas dirias. Periodo {data_inicio_formatada} até {data_fim_formatada}"
+        
+        elements.append(header_text)
+        elements.append("<br/>")
+
+    def _draw_footer(self, elements):
+        """
+        Adiciona o rodapé.
+        """
+        elements.append("Rodapé")
+        elements.append("<br/>")
+
+    def _prepare_content(self, total_pagamento):
+        """
+        Prepara os dados para a tabela.
+        """
+        content = [
+            [self.funcao.funcionario['nome_funcionario'], self.funcao.funcionario['nome_funcao'], self.funcao.funcionario['numero_cpf'], total_pagamento['sub_total_bruto'], total_pagamento['sub_total_dois_onze'], total_pagamento['sub_total_tres'], self.funcao.funcionario['chave_pix'], "", self.funcao.data_pagamento.strftime("%d/%m/%Y")]
+        ]
+        return content
+
+    def _create_table(self, content):
+        """
+        Cria a tabela.
+        """
+        table = Table(content)
+        table.setStyle(TableStyle([
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ]))
+        return table    
 
     def _draw_header(self, elements):
         total_pagamento = self.funcao.calcular_pagamento_um()
