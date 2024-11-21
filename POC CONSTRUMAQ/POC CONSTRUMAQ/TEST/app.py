@@ -6,14 +6,11 @@ from criar_cargo import CriarFuncionario
 import json
 import os
 import time
-from flask import Flask
 from flask_cors import CORS
 import logging
-from flask import Flask, send_from_directory
 import uuid
 import sys
 from werkzeug.serving import run_simple
-import requests
 from io import BytesIO
 from docx.shared import Pt
 from docx.shared import Pt, Cm
