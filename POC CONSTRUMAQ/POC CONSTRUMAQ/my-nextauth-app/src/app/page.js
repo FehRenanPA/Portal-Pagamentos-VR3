@@ -1,8 +1,8 @@
-// src/app/page.js
 'use client';  // Adiciona a diretiva para renderização do lado do cliente
 import { useState } from 'react';
 import LoginModal from './componentes/LoginModal';  // Importação de um componente local
-import MyComponent from './componentes/MyComponent'; // Importação do componente com alias
+import MyComponent from '@/componentes/MyComponent'; // Importação do componente com alias
+import { SpeedInsights } from "@vercel/speed-insights/next";  // Importando o componente de insights de velocidade
 
 export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -22,6 +22,9 @@ export default function Home() {
 
       {/* Exibe o modal quando isModalOpen for true */}
       <LoginModal isOpen={isModalOpen} onClose={closeModal} />
+      
+      {/* Adicionando o componente de insights de velocidade */}
+      <SpeedInsights />
     </div>
   );
 }

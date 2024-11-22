@@ -1,4 +1,5 @@
 // src/components/MyComponent.js
+
 import React from 'react';
 
 const MyComponent = () => {
