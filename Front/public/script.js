@@ -322,8 +322,8 @@ function editarFuncionarioModal(uidFuncionario, nomeFuncionario, nomefuncao, cpf
 
 
      //********************* Select para a criação do recibo. ***************************
-        $(document).ready(function() {
-        $('#name_funcionario').select2({
+        (document).ready(function() {
+        ('#name_funcionario').select2({
             placeholder: "Selecione um funcionário",
             allowClear: true,
             width: 'resolve',
@@ -360,7 +360,7 @@ function editarFuncionarioModal(uidFuncionario, nomeFuncionario, nomefuncao, cpf
         }
     
      // Evento para preencher os campos quando um funcionário é selecionado
-    $('#name_funcionario').on('change', (event) => {
+    ('#name_funcionario').on('change', (event) => {
         const selectedOption = event.target.options[event.target.selectedIndex];
     
         // Verifica se há uma opção selecionada
@@ -556,10 +556,10 @@ function editarFuncionarioModal(uidFuncionario, nomeFuncionario, nomefuncao, cpf
 
         // Configura o evento de clique no botão "Cancelar"
         document.querySelector('.btn-secondary[data-bs-dismiss="modal"]').onclick = function() {
-            $('#documentPreviewModal').modal('hide'); // Fecha o modal
+            ('#documentPreviewModal').modal('hide'); // Fecha o modal
             };
         // Exibe o modal se necessário
-        $('#documentPreviewModal').modal('show');
+        ('#documentPreviewModal').modal('show');
 
             } else {
                 console.error('Erro: A resposta não é um PDF. Tipo de conteúdo:', contentType);
