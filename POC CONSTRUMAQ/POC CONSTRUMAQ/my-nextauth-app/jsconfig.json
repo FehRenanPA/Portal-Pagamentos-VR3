@@ -1,7 +1,9 @@
+// jsconfig.json
 {
   "compilerOptions": {
+    "baseUrl": "src",  // Define a pasta 'src' como a base para as importações
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["*"]  // Define o alias '@' para apontar para qualquer pasta dentro de 'src'
     }
   }
 }

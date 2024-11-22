@@ -1,7 +1,8 @@
 // src/app/page.js
-'use client';  // Adicione esta linha no topo
+'use client';  // Adiciona a diretiva para renderização do lado do cliente
 import { useState } from 'react';
-import LoginModal from './componentes/LoginModal';
+import LoginModal from './componentes/LoginModal';  // Importação de um componente local
+import MyComponent from './componentes/MyComponent'; // Importação do componente com alias
 
 export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
