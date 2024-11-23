@@ -131,7 +131,17 @@
         // Se ocorrer um erro, exibe uma mensagem
         errorMessage.style.display = 'block';
         console.error("Erro de login:", error.message);
-      }
+
+
+            }// Função para deslogar
+        function logout() {
+            signOut(auth).then(() => {
+            window.location.href = 'login.html';  // Redireciona para a página de login
+            }).catch((error) => {
+            console.error("Erro ao deslogar:", error.message);
+            });
+        }
+
     });
   </script>
 </body>
