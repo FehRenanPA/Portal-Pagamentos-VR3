@@ -1,8 +1,11 @@
 from flask import Flask, request, jsonify, render_template, send_file, abort
 from datetime import datetime
-from gerar_sub_total_um import Sub_total_um
-from gerador_olerite import Gerar_olerite
-from criar_cargo import CriarFuncionario
+#from gerar_sub_total_um import Sub_total_um
+#from gerador_olerite import Gerar_olerite
+#from criar_cargo import CriarFuncionario
+from Backend import gerar_sub_total_um
+from Backend import gerador_olerite
+from Backend import criar_cargo
 import json
 import os
 import time
@@ -479,7 +482,9 @@ def new_home():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
+    #app.run(debug=True, port=5000)
      # Inicia o servidor Flask
     #run_simple('127.0.0.1', 5000, app, use_reloader=True)
     
