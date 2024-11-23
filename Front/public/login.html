@@ -88,8 +88,13 @@
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
+  
 
   <script>
+     // Importar módulos do Firebase
+     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+     import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+ 
     // Configuração do Firebase (substitua com suas credenciais do Firebase)
     const firebaseConfig = {
         apiKey: "AIzaSyD10AX72GASmdiTl9rhlGrUm7vLHz2yNzw",
@@ -101,27 +106,31 @@
       };
 
     // Inicializar Firebase
-    const app = firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
 
-    // Função de login
-    document.getElementById("login-form").addEventListener("submit", (event) => {
+    // Referência ao formulário de login
+    const loginForm = document.getElementById('login-form');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const errorMessage = document.getElementById('error-message');
+
+    // Função para autenticar o usuário
+    loginForm.addEventListener('submit', async (event) => {
       event.preventDefault();
 
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
+      const email = emailInput.value;
+      const password = passwordInput.value;
 
-      auth.signInWithEmailAndPassword(email, password)
-        .then((userCredential) => {
-          // Usuário logado com sucesso
-          alert("Login bem-sucedido!");
-          window.location.href = "index.html";  // Redireciona após login
-        })
-        .catch((error) => {
-          const errorCode = error.code;
-          const errorMessage = error.message;
-          alert("Erro: " + errorMessage);
-        });
+      try {
+        // Tenta fazer o login com e-mail e senha
+        await signInWithEmailAndPassword(auth, email, password);
+        // Caso o login seja bem-sucedido, redireciona o usuário
+        window.location.href = 'pagina-principal.html';  // Redireciona para outra página
+      } catch (error) {
+        // Se ocorrer um erro, exibe uma mensagem
+        errorMessage.style.display = 'block';
+      }
     });
   </script>
 </body>
