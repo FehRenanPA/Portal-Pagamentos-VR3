@@ -34,12 +34,6 @@
       margin-bottom: 20px;
     }
 
-    label {
-      font-size: 14px;
-      margin-bottom: 5px;
-      display: block;
-    }
-
     input {
       width: 100%;
       padding: 10px;
@@ -62,16 +56,12 @@
       background-color: #45a049;
     }
 
-    p {
+    .error {
+      color: red;
+      font-size: 14px;
+      margin-top: -10px;
+      margin-bottom: 10px;
       text-align: center;
-    }
-
-    a {
-      color: #4CAF50;
-    }
-
-    a:hover {
-      text-decoration: underline;
     }
   </style>
 </head>
@@ -79,8 +69,9 @@
   <div class="login-container">
     <h2>Login</h2>
     <form id="login-form">
-      <input type="email" id="email" placeholder="Email" required>
-      <input type="password" id="password" placeholder="Senha" required>
+      <input type="email" id="email" placeholder="Email" required aria-label="Email">
+      <input type="password" id="password" placeholder="Senha" required aria-label="Senha">
+      <p id="error-message" class="error" style="display: none;"></p>
       <button type="submit">Entrar</button>
     </form>
   </div>
@@ -88,26 +79,20 @@
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
-  
-
   <script>
-     // Importar módulos do Firebase
-     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-     import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
- 
-    // Configuração do Firebase (substitua com suas credenciais do Firebase)
+    // Configuração do Firebase
     const firebaseConfig = {
-        apiKey: "AIzaSyD10AX72GASmdiTl9rhlGrUm7vLHz2yNzw",
-        authDomain: "portal-pagamento-vr3.firebaseapp.com",
-        projectId: "portal-pagamento-vr3",
-        storageBucket: "portal-pagamento-vr3.firebasestorage.app",
-        messagingSenderId: "705628574086",
-        appId: "1:705628574086:web:43a2e4553f309607381c07"
-      };
+      apiKey: "AIzaSyD10AX72GASmdiTl9rhlGrUm7vLHz2yNzw",
+      authDomain: "portal-pagamento-vr3.firebaseapp.com",
+      projectId: "portal-pagamento-vr3",
+      storageBucket: "portal-pagamento-vr3.appspot.com",
+      messagingSenderId: "705628574086",
+      appId: "1:705628574086:web:43a2e4553f309607381c07"
+    };
 
     // Inicializar Firebase
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
+    const app = firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
 
     // Referência ao formulário de login
     const loginForm = document.getElementById('login-form');
@@ -116,33 +101,34 @@
     const errorMessage = document.getElementById('error-message');
 
     // Função para autenticar o usuário
-    loginForm.addEventListener('submit', async (event) => {
+    loginForm.addEventListener('submit', (event) => {
       event.preventDefault();
 
-      const email = emailInput.value;
+      const email = emailInput.value.trim();
       const password = passwordInput.value;
 
-      try {
-        // Tenta fazer o login com e-mail e senha
-        await signInWithEmailAndPassword(auth, email, password);
-        // Caso o login seja bem-sucedido, redireciona o usuário
-        window.location.href = 'pagina-principal.html';  // Redireciona para outra página
-      } catch (error) {
-        // Se ocorrer um erro, exibe uma mensagem
-        errorMessage.style.display = 'block';
-        console.error("Erro de login:", error.message);
-
-
-            }// Função para deslogar
-        function logout() {
-            signOut(auth).then(() => {
-            window.location.href = 'login.html';  // Redireciona para a página de login
-            }).catch((error) => {
-            console.error("Erro ao deslogar:", error.message);
-            });
-        }
-
+      auth.signInWithEmailAndPassword(email, password)
+        .then(() => {
+          // Redireciona o usuário em caso de sucesso
+          window.location.href = 'pagina-principal.html';
+        })
+        .catch((error) => {
+          // Exibe a mensagem de erro
+          errorMessage.style.display = 'block';
+          errorMessage.textContent = traduzirErro(error.code);
+          console.error("Erro de login:", error.message);
+        });
     });
+
+    // Função para traduzir mensagens de erro
+    function traduzirErro(code) {
+      const mensagens = {
+        "auth/user-not-found": "Usuário não encontrado.",
+        "auth/wrong-password": "Senha incorreta.",
+        "auth/invalid-email": "Email inválido.",
+      };
+      return mensagens[code] || "Erro desconhecido.";
+    }
   </script>
 </body>
 </html>
