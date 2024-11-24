@@ -1,2 +1,2 @@
-web: python Backend/app.py
+web: python app.py
 
