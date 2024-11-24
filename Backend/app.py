@@ -3,9 +3,9 @@ from datetime import datetime
 #from gerar_sub_total_um import Sub_total_um
 #from gerador_olerite import Gerar_olerite
 #from criar_cargo import CriarFuncionario
-from Backend import gerar_sub_total_um
-from Backend import gerador_olerite
-from Backend import criar_cargo
+import gerar_sub_total_um
+import gerador_olerite
+import criar_cargo
 import json
 import os
 import time
