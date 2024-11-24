@@ -1,11 +1,13 @@
 from flask import Flask, request, jsonify, render_template, send_file, abort
 from datetime import datetime
-#from gerar_sub_total_um import Sub_total_um
-#from gerador_olerite import Gerar_olerite
-#from criar_cargo import CriarFuncionario
-import gerar_sub_total_um
-import gerador_olerite
-import criar_cargo
+from Backend.gerar_sub_total_um import Sub_total_um
+from Backend.gerador_olerite import Gerar_olerite
+from Backend.criar_cargo import CriarFuncionario
+import firebase_admin
+from firebase_admin import credentials, firestore
+#from . import gerar_sub_total_um
+#from . import gerador_olerite
+#from . import criar_cargo
 import json
 import os
 import time
@@ -30,6 +32,7 @@ logger = logging.getLogger(__name__)
 
 
 app = Flask(__name__)
+db = get_firestore_client()
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Configuração do logging
@@ -469,6 +472,17 @@ def update_funcionario(id):
 @app.route('/')
 def home():
     return "Home Page"
+
+@app.route('/')
+def index():
+    # Exemplo: Criar um documento no Firestore
+    user_data = {
+        'name': 'John Doe',
+        'email': 'john@example.com',
+        'created_at': firestore.SERVER_TIMESTAMP
+    }
+    db.collection('users').document('user_1').set(user_data)
+    return jsonify({"message": "Documento criado/atualizado com sucesso."})
 
 @app.route('/about')
 def about():
