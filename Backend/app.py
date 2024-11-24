@@ -1,8 +1,8 @@
 from flask import Flask, request, jsonify, render_template, send_file, abort
 from datetime import datetime
-from Backend.gerar_sub_total_um import Sub_total_um
-from Backend.gerador_olerite import Gerar_olerite
-from Backend.criar_cargo import CriarFuncionario
+from gerar_sub_total_um import Sub_total_um
+from gerador_olerite import Gerar_olerite
+from criar_cargo import CriarFuncionario
 #from . import gerar_sub_total_um
 #from . import gerador_olerite
 #from . import criar_cargo
