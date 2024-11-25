@@ -1,0 +1,88 @@
+[33ma3c00521[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m Salvando alterações locais antes do revert
+[33m3ee78eab[m Salvando alterações locais antes do revert
+[33ma55060f5[m Commit tres
+[33mf7e48804[m[33m ([m[1;31morigin/main[m[33m)[m Recriar diretório functions com arquivos essenciais
+[33m82af4402[m Reverter commit 9017371d91c8971a51ce442d6d807e64200d078b
+[33mc224e07f[m Remover credenciais de serviço
+[33mca69e120[m Remover credenciais de serviço
+[33ma615a784[m Remover credenciais de serviço
+[33m56f3ca02[m Remover segredo e corrigir commit
+[33med76ba1a[m Teste back fire base
+[33m19250158[m Adicionando arquivo criar_cargo.py
+[33m6cbd95ee[m Adicionando arquivo criar_cargo.py
+[33mc56a5f7f[m Primeiro Commit
+[33m498d5c0f[m Primeiro Commit
+[33m91f54953[m Corrigir caminho do módulo criar_cargo
+[33m3add6938[m Corrigir caminho do módulo criar_cargo
+[33m5014cc56[m Primeiro commit 9
+[33m68631949[m Primeiro commit 8
+[33m0b10d58d[m Primeiro commit 7
+[33mf028e592[m Primeiro commit 6
+[33mba2b1287[m Primeiro commit 5
+[33m00b5cc5b[m Primeiro commit 4
+[33mcec8ed9c[m Primeiro commit 3
+[33m8e48711c[m Primeiro commit 2
+[33md31d7a30[m Mensagem do commit para o back-end
+[33m42706c9c[m Mensagem do commit para o back-end
+[33m412a7f63[m Mensagem do commit para o back-end
+[33m7e60e4f3[m Mensagem do commit para o back-end
+[33m8cc6aec6[m Corrigindo configuração para Heroku
+[33mb416da82[m Corrigindo configuração para Heroku
+[33m26bf6c4e[m Corrigindo configuração para Heroku
+[33mba4151c2[m Corrigindo configuração para Heroku
+[33me4b6d1f8[m Corrigindo configuração para Heroku
+[33me6615b2f[m Adicionando Procfile
+[33m749c8afa[m Adicionando Procfile
+[33md70d0540[m Adicionando Procfile
+[33m7bce2246[m Configuração do MongoDB no Heroku
+[33m65a23bda[m Corrigindo erro
+[33m2bb9aaed[m Primeiro commit
+[33mda60af0c[m versão com ajuste na tela de login
+[33m01e03f99[m Inclusão da função de delogar
+[33m41d243ea[m Inclusão de Login e senha - 2
+[33m1985b139[m Inclusão de Login e senha-Retificado
+[33me195a7f5[m Inclusão de Login e senha
+[33mca944831[m Organizar arquivos para deploy no Firebase Hosting - login
+[33ma6057cb1[m Organizar arquivos para deploy no Firebase Hosting
+[33mf530cc3f[m primeiro commit firebase
+[33m399a8957[m Repaginação de tudo 13
+[33mb329847b[m Repaginação de tudo 11
+[33m53448c99[m Repaginação de tudo 10
+[33m88569917[m Repaginação de tudo 9
+[33mdee4a240[m Repaginação de tudo 8
+[33mc97bf57a[m Repaginação de tudo 7
+[33md3ec2a8c[m Repaginação de tudo 6
+[33m7104d4a0[m Repaginação de tudo 5
+[33m5a98220f[m Repaginação de tudo 4
+[33m5dc6cced[m Repaginação de tudo 2
+[33m13a15440[m Repaginação do front e back
+[33ma5f90631[m Vesão atualizada 17
+[33m7020f243[m Vesão atualizada 16
+[33mcb20ed40[m Vesão atualizada 15
+[33md6c77b9b[m Vesão atualizada 14
+[33ma5ac23af[m Vesão atualizada 13
+[33mf75fac59[m Vesão atualizada 12
+[33m0fa82798[m Vesão atualizada 11
+[33m61d43e99[m Vesão atualizada 10
+[33mbd4fd3d7[m Vesão atualizada 8
+[33m3c1893b1[m Vesão atualizada 7
+[33mfb8e264a[m Vesão atualizada 7
+[33me2bce1da[m Vesão atualizada 6
+[33m839f7dcc[m Vesão atualizada  5
+[33m3af13f74[m Vesão atualizada 4
+[33m26cb9eeb[m Vesão atualizada 3
+[33m2c566a36[m Vesão atualizada 2
+[33ma3e29c67[m versão com novo ajuste
+[33md45a9fbc[m versão para teste ajustada
+[33mdade1b3f[m versão para teste do front e login e senha
+[33m7efd3a27[m commit de segurança
+[33m8d4b6908[m commit de segurança
+[33m632cc465[m Initial commit for Next.js app
+[33m6f034c2e[m Versão com ajustes no modal que gerar os relatórios e ajuste no arquivo extraído
+[33m6ba00bb9[m Commit do arquivo
+[33mbaeb0f04[m Teste 2
+[33m49b6dd1f[m Teste
+[33m150d68a4[m Remover arquivos desnecessários
+[33m4c518c1f[m Equalização da main com a master
+[33m6b0b7268[m Versão implantada em maquina fisica na data 28/10/2024
+[33m04663815[m Mensagem descritiva do commit
