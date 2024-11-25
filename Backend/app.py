@@ -1,8 +1,8 @@
 from flask import Flask, request, jsonify, render_template, send_file, abort
 from datetime import datetime
-from Backend.gerar_sub_total_um import Sub_total_um
-from Backend.gerador_olerite import Gerar_olerite
-from Backend.criar_cargo import CriarFuncionario
+from gerar_sub_total_um import Sub_total_um
+from gerador_olerite import Gerar_olerite
+from criar_cargo import CriarFuncionario
 import firebase_admin
 from firebase_admin import credentials, firestore
 #from . import gerar_sub_total_um
@@ -24,15 +24,38 @@ import threading
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
-
+from dotenv import load_dotenv
 
 # Configuração do logger
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+# Carregar as variáveis de ambiente do arquivo .env
+load_dotenv()
+
+        # Obter e configurar o Firebase com a credencial
+        #service_account_info = os.getenv("FIREBASE_SERVICE_ACCOUNT_KEY")
+        #if not service_account_info:
+            #raise ValueError("A variável FIREBASE_SERVICE_ACCOUNT_KEY não está configurada.")
+
+        # Carregar a credencial do Firebase
+        #service_account_data = json.loads(service_account_info)
+        #cred = credentials.Certificate(service_account_data)
+        #firebase_admin.initialize_app(cred)
+
+        # Inicializar o Firestore
+        #db = firestore.client()
+        #print("Firebase conectado com sucesso!")
+
+        # Inicializar o Flask
+        #app = Flask(__name__)
+
+            # Habilitar CORS
+        #from flask_cors import CORS
+        #CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 app = Flask(__name__)
-db = get_firestore_client()
+#db = get_firestore_client()
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Configuração do logging
