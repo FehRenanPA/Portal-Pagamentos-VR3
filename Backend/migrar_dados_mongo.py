@@ -7,7 +7,7 @@ import json
 # Carregar as variáveis de ambiente do arquivo .env
 load_dotenv()
 
-#uri = "mongodb+srv://vr3_Engernharia:Construmaq1010@cluster0.3fjax.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+
 uri=os.getenv("MONGO_URI")
 client = MongoClient(uri)
 

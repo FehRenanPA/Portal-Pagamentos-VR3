@@ -1,19 +1,19 @@
 from flask import Flask, request, jsonify, render_template, send_file, abort
 from datetime import datetime
-from Backend.gerar_sub_total_um import Sub_total_um
-from Backend.gerador_olerite import Gerar_olerite
-from Backend.criar_cargo import CriarFuncionario
+from gerar_sub_total_um import Sub_total_um
+from gerador_olerite import Gerar_olerite
+from criar_cargo import CriarFuncionario
 import firebase_admin
 from firebase_admin import credentials, firestore
-#from . import gerar_sub_total_um
-#from . import gerador_olerite
+from firebase_storage import initialize_firebase, get_firestore_client, upload_file_to_storage 
 #from . import criar_cargo
 import json
 import os
 import time
 from flask_cors import CORS
 import logging
-import uuid
+#from uuid
+from utils import is_valid_uuid
 import sys
 from werkzeug.serving import run_simple
 from io import BytesIO
@@ -32,7 +32,31 @@ logger = logging.getLogger(__name__)
 
 
 app = Flask(__name__)
+# Inicializar Firebase
+initialize_firebase()
+
+# Exemplo de uso do Firestore
+def add_to_firestore(collection_name, document_id, data):
+    firestore_client = get_firestore_client()
+    firestore_client.collection(collection_name).document(document_id).set(data)
+    print(f"Dados adicionados à coleção {collection_name} com ID {document_id}")
+
+# Exemplo de uso do Storage
+def upload_file_to_storage(local_file_path, storage_file_name):
+    try:
+        bucket = storage.bucket()
+        blob = bucket.blob(storage_file_name)
+        blob.upload_from_filename(local_file_path)
+        print(f"Arquivo {local_file_path} enviado como {storage_file_name}")
+    except Exception as e:
+        print(f"Erro durante o upload: {e}")
+
+
+# Obtém o cliente Firestore
 db = get_firestore_client()
+print("Firestore inicializado com sucesso.")
+
+
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Configuração do logging
@@ -69,23 +93,14 @@ class CriarFuncionario:
     # Carrega cargos inicialmente
 funcionario_dict = CriarFuncionario.carregar_funcionarios()    
 
-#Reencia o servidor após cada evento
 def reiniciar_servidor():
-    """ Reinicia o servidor Flask para aplicar alterações no dicionário """
-    os.execv(sys.executable, ['python'] + sys.argv)
-    
+    os.system("flask run")  # Comando para reiniciar o servidor (só funciona em Flask nativo)
+
 @app.after_request
 def after_request(response):
-    # Verifica se a resposta não é None
-    if response is None:
-        return '', 204  # Retorna uma resposta vazia com status 204 No Content
-
-    # Se for uma resposta válida, continue com a lógica
-    if request.method in ['POST', 'PUT']:
-        app.logger.info('Atualização detectada, aplicando reload.')
+    # Verifica se está no ambiente de desenvolvimento
+    if app.env == "development" and request.method in ['POST', 'PUT']:
         threading.Timer(1, reiniciar_servidor).start()
-        # Lógica de reload do dicionário se aplicável
-    
     return response
 
 
@@ -329,7 +344,7 @@ def editar_funcionario(funcionario_id):
     
     
     logger.info(f'Funcionário {funcionario_id} atualizado com sucesso: {funcionario}')
-    return jsonify({'message': 'Funcionário atualizado com sucesso', 'data': funcionario}), 200
+    return jsonify({'message': 'Funcionário atualizado com sucesso', 'data': funcionario_dict[funcionario_id]}), 200
     
     
     
@@ -468,38 +483,64 @@ def update_funcionario(id):
     data = request.get_json()
     # Atualize os dados do funcionário no banco de dados
     return jsonify({'message': 'Funcionário atualizado com sucesso.'})
+             
+# --- Rota para validar e salvar UUID (POST) ---
+@app.route('/api/validate_uuid', methods=['POST'])
+def validate_uuid_post():
+    data = request.get_json()
+    uuid_val = data.get("uuid")
 
+    if not uuid_val or not is_valid_uuid(uuid_val):
+        return jsonify({"message": "Invalid UUID"}), 400
+
+    # Verifica se já existe no MongoDB
+    existing_entry = collection.find_one({"uuid": uuid_val})
+    if existing_entry:
+        return jsonify({"message": "UUID already exists in the database"}), 409
+
+    # Insere no MongoDB
+    collection.insert_one({"uuid": uuid_val})
+    return jsonify({"message": "UUID saved successfully"}), 201
+
+# --- Rota para validar UUID sem salvar (GET) ---
+@app.route('/validate_uuid/<uuid_val>', methods=['GET'])
+def validate_uuid_get(uuid_val):
+    if is_valid_uuid(uuid_val):
+        return {"message": "Valid UUID"}
+    return {"message": "Invalid UUID"}, 400
+
+# --- Rota para buscar todos os UUIDs no MongoDB ---
+@app.route('/api/uuids', methods=['GET'])
+def get_uuids():
+    uuids = list(collection.find({}, {"_id": 0, "uuid": 1}))  # Remove o _id do retorno
+    return jsonify({"uuids": uuids})
+
+# --- Outras rotas simples ---
 @app.route('/')
 def home():
     return "Home Page"
-
-@app.route('/')
-def index():
-    # Exemplo: Criar um documento no Firestore
-    user_data = {
-        'name': 'John Doe',
-        'email': 'john@example.com',
-        'created_at': firestore.SERVER_TIMESTAMP
-    }
-    db.collection('users').document('user_1').set(user_data)
-    return jsonify({"message": "Documento criado/atualizado com sucesso."})
 
 @app.route('/about')
 def about():
     return "About Page"
 
-# Se precisar de um endpoint com o mesmo nome, altere
-@app.route('/new-home')
-def new_home():
-    return "New Home Page"
+# Listar todas as rotas (opcional, apenas para debug)
+@app.route('/routes', methods=['GET'])
+def list_routes():
+    routes = [{"endpoint": rule.endpoint, "rule": rule.rule} for rule in app.url_map.iter_rules()]
+    return jsonify(routes)
 
-
-
-if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+#----- Teste Locais -----#
+ #if __name__ == '__main__':
+    #port = int(os.environ.get("PORT", 5000))
+    #app.run(host='0.0.0.0', port=port)
     #app.run(debug=True, port=5000)
      # Inicia o servidor Flask
     #run_simple('127.0.0.1', 5000, app, use_reloader=True)
-    
-      
+if __name__ == "__main__":
+    local_file = "C:/Users/felipe.rsantos/Downloads/Projeto Recibos/PORTAL DE PAGAMENTOS CONSTRUMAQ/Backend/static"
+    storage_file = "uploads/file_on_storage.txt" 
+    # Inicialize o Firebase (caso não tenha sido feito antes)
+    initialize_firebase()
+    # Faz o upload do arquivo
+    upload_file_to_storage(local_file, storage_file)
