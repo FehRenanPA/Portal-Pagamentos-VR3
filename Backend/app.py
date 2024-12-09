@@ -4,7 +4,7 @@ from gerar_sub_total_um import Sub_total_um
 from gerador_olerite import Gerar_olerite
 from criar_cargo import CriarFuncionario
 import firebase_admin
-from firebase_admin import credentials, firestore
+from firebase_admin import storage, credentials, firestore
 from firebase_storage import initialize_firebase, get_firestore_client, upload_file_to_storage 
 from bson.objectid import ObjectId
 from pymongo import MongoClient
@@ -31,7 +31,7 @@ from pymongo.errors import PyMongoError
 from gerar_relatorio import GerarExcel
 import traceback
 
-# Configuração do logger
+
 logging.basicConfig(
     level=logging.DEBUG,  # Nível de log (DEBUG, INFO, WARNING, ERROR, CRITICAL)
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -45,14 +45,13 @@ app = Flask(__name__)
 initialize_firebase()
 
 
+##--------- Firebase
 
-# Exemplo de uso do Firestore
 def add_to_firestore(collection_name, document_id, data):
     firestore_client = get_firestore_client()
     firestore_client.collection(collection_name).document(document_id).set(data)
     print(f"Dados adicionados à coleção {collection_name} com ID {document_id}")
 
-# Exemplo de uso do Storage
 def upload_file_to_storage(local_file_path, storage_file_name):
     try:
         bucket = storage.bucket()
@@ -66,19 +65,15 @@ def upload_file_to_storage(local_file_path, storage_file_name):
 
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-# Configuração do logging
+
 logging.basicConfig(level=logging.DEBUG,  # Exibe logs de nível DEBUG e superiores
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Carregar variáveis de ambiente
+#------> Acessar o Mongo <--------#
 load_dotenv()
 
-# URI de conexão
 uri = os.getenv("MONGO_URI")
-#uri=""
 client = MongoClient(uri)
-
-# Selecionar banco e coleção
 db = client['FUNCIONARIOS_VR3_PAGAMENTOS']
 colecao = db['funcionario']
         
@@ -104,12 +99,14 @@ def get_funcionario_por_id(funcionario_id):
     except Exception as e:
         print(f"Erro ao buscar funcionário: {e}")
         return jsonify({'error': 'Erro interno no servidor'}), 500
+    
+    
 
-               ### Preparativos para o Relatorio #########
-##---------------- Instancia o manipulador do MongoDB ----------------------------####
+            ######## Preparativos para o Relatorio #########
+#---------------- Instancia o manipulador do MongoDB ----------------------------
 db_handler = MongoDBHandler(database_name="FUNCIONARIOS_VR3_PAGAMENTOS", collection_name="pagamentos_periodo")
 
-## -------------- Converste o retorno do mongo para string ----------------------####
+#-------------- Converste o retorno do mongo para string ----------------------
 def serialize_document(doc):
     """
     Converte um documento MongoDB para um formato serializável pelo JSON.
@@ -163,21 +160,11 @@ class CriarFuncionario:
         colecao.insert_many(funcionarios_lista)  # Insere novos dados
         print("Funcionários salvos no MongoDB com sucesso.")
 
-# Carregar funcionários antes de utilizá-los
 funcionario_dict = CriarFuncionario.carregar_funcionarios()
-
-# Certifique-se de que funcionário_dict está populado antes de usá-lo
 if funcionario_dict:
     print("Funcionários carregados com sucesso:")
-    #print(funcionario_dict)
 else:
     print("Nenhum funcionário encontrado no MongoDB.")
-
-
-#print(funcionario_dict)
-#def reiniciar_servidor():
-    #os.system("flask run")  # Comando para reiniciar o servidor (só funciona em Flask nativo)
-
 
 
 ###-----------------Busca dados para gerar o Relatorio/Excell com dados do Mongo--------------------------#####
@@ -213,8 +200,6 @@ def relatorio_periodo():
         if not data_inicio or not data_fim:
             return jsonify({"erro": "É necessário enviar as datas de início e fim."}), 400
 
-        # Usando o método buscar_por_filtro para buscar documentos com base nas equipes e datas
-        # Alteração na chamada do método para usar o filtro diretamente
         documentos = db_handler.buscar_por_filtro(data_inicio=data_inicio, data_fim=data_fim, equipes=equipes)
 
         if documentos:
@@ -232,7 +217,6 @@ def relatorio_periodo():
 @app.route('/api/gerar_relatorio', methods=['POST'])
 def gerar_relatorio():
     try:
-        # Captura os dados enviados no payload
         data = request.get_json()
         
         # Valida se os dados estão presentes
@@ -241,23 +225,18 @@ def gerar_relatorio():
 
         documentos = data.get('documentos', [])
         
-        # Valida se os documentos possuem conteúdo
         if not documentos:
             return jsonify({"error": "Nenhum documento foi enviado."}), 400
 
-        # Extrai informações compartilhadas
         data_inicio = documentos[0].get('data_inicio', '')
         data_fim = documentos[0].get('data_fim', '')
         equipes = list(set(doc.get('equipe', '') for doc in documentos if 'equipe' in doc))
 
-        # Valida campos obrigatórios
         if not data_inicio or not data_fim:
             return jsonify({"error": "Data de início ou fim ausente."}), 400
 
-        # Cria a instância da classe GerarExcel
         gerar_excel = GerarExcel(data_inicio, data_fim, equipes, documentos)
 
-        # Gera o relatório em memória
         arquivo_em_memoria = gerar_excel.gerar_excel_em_memoria()
 
         if not arquivo_em_memoria:
@@ -276,10 +255,6 @@ def gerar_relatorio():
     except Exception as e:
         print(f"Erro ao gerar o relatório: {e}")
         return jsonify({"error": f"Erro ao gerar relatório: {str(e)}"}), 500
-
-
-    
-
 
 ##----------------------------------> Gerar etiquetas <------------------------------------##
 
@@ -385,13 +360,12 @@ def funcionarios():
                 
             ]
 
-            # Verifica se todos os campos obrigatórios estão presentes
             missing_fields = [field for field in required_fields if field not in data]
             if missing_fields: 
                 print(f"Campos obrigatórios faltando: {missing_fields}")
                 return jsonify({"message": f"Campos obrigatórios faltando: {', '.join(missing_fields)}!"}), 400
             
-            # Converte os valores para float
+
             for field in required_fields[1:]:  # Ignora o primeiro campo 'nome_funcionario'
                 if field in data:
                    if field in ['numero_cpf', 'chave_pix']:  # Esses campos devem ser string
@@ -417,8 +391,7 @@ def funcionarios():
 def criar_funcionario():
     try:
         data = request.json
-
-        # Verificar campos obrigatórios
+        
         required_fields = ['nome_funcionario', 'nome_funcao', 'equipe', 'numero_cpf', 'chave_pix', 'valor_hora_base', 
                            'valor_hora_extra_um', 'valor_hora_extra_dois', 'adicional_noturno', 
                            'repouso_remunerado', 'valor_ferias', 'valor_um_terco_ferias', 
@@ -428,18 +401,14 @@ def criar_funcionario():
         if not data or any(field not in data for field in required_fields):
             return jsonify({'error': 'Dados obrigatórios faltando!'}), 400
 
-        # Verifica duplicidade pelo CPF
         if colecao.find_one({'numero_cpf': data['numero_cpf']}):
             return jsonify({'error': 'Funcionário com esse CPF já existe!'}), 409
 
-        # Insere o funcionário no banco
         novo_funcionario = {key: data.get(key) for key in required_fields}
         insert_result = colecao.insert_one(novo_funcionario)
         
-        # Convertendo o _id para string
         funcionario_id = str(insert_result.inserted_id)
 
-        # Incluindo o _id como string no retorno
         novo_funcionario['_id'] = funcionario_id
 
         return jsonify({'message': 'Funcionário criado com sucesso!', '_id': funcionario_id, 'data': novo_funcionario}), 201
@@ -484,6 +453,7 @@ def update_funcionario(funcionario_id):
         # Registra o erro completo no log
         app.logger.error(f"Erro ao atualizar o funcionário {funcionario_id}: {str(e)}")
         return jsonify({'message': 'Erro interno ao processar a requisição.'}), 500
+    
 ###---------------------------------------> Criar Recibo <--------------------------------------------##
 
 @app.route('/api/criar_recibo', methods=['POST'])
@@ -491,8 +461,7 @@ def criar_recibo():
     try:
         data = request.json
         app.logger.info(f"Dados recebidos pelo back: {data}")
-        
-        # Verificando se os dados obrigatórios estão presentes
+    
         required_fields = [
             'data_inicio', 'data_fim', 'data_pagamento', 'name_funcionario', 'nome_cargo',
             'horas_trabalhadas', 'valor_diarias', 'horas_extras_um', 'horas_extras_dois',
@@ -602,56 +571,40 @@ def get_funcionario(funcionario_id):
     
     return jsonify({'error': 'Funcionário não encontrado'}), 404
 
-
-##----------------------------------> Baixar Relatorio no Excell <-----------------------------------##                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
-
-@app.route('/baixar_relatorio/<filename>', methods=['GET'])
-def baixar_relatorio(filename):
+# Função para fazer upload de arquivos para o Firebase Storage
+@app.route('/upload', methods=['POST'])
+def upload_file():
     try:
-        directory = './static/relatorios'  # Certifique-se de que este diretório seja o mesmo onde os arquivos são salvos
-        return send_from_directory(directory, filename, as_attachment=True)
+        # Verifica se o arquivo foi enviado na requisição
+        if 'file' not in request.files:
+            return jsonify({"error": "No file part"}), 400
+        file = request.files['file']
+        
+        # Verifica se o arquivo tem um nome
+        if file.filename == '':
+            return jsonify({"error": "No selected file"}), 400
+
+        # Define o caminho local do arquivo (temporário) e o nome do arquivo no Firebase Storage
+        local_file_path = os.path.join("uploads", file.filename)
+        file.save(local_file_path)  # Salva o arquivo localmente no servidor
+        
+        storage_file_name = f"uploads/{file.filename}"  # Nome do arquivo no Firebase Storage
+        
+        # Faz o upload para o Firebase Storage
+        upload_file_to_storage(local_file_path, storage_file_name)
+        
+        return jsonify({"message": f"Arquivo {file.filename} enviado para o Firebase Storage com sucesso!"}), 200
+    
     except Exception as e:
-        logger.error(f"Erro ao tentar enviar o arquivo: {e}", exc_info=True)
-        return jsonify({"erro": "Erro ao tentar enviar o arquivo."}), 500
+        logger.error(f"Erro ao fazer upload: {e}")
+        return jsonify({"error": str(e)}), 500
 
+# Função para adicionar dados ao Firestore (exemplo de uso)
+def add_to_firestore(collection_name, document_id, data):
+    firestore_client = get_firestore_client()
+    firestore_client.collection(collection_name).document(document_id).set(data)
+    print(f"Dados adicionados à coleção {collection_name} com ID {document_id}")
 
-
-#@app.route('/api/funcionarios/<int:id>', methods=['PUT'])
-#def update_funcionario(id):
- #   data = request.get_json()
-    # Atualize os dados do funcionário no banco de dados
-  #  return jsonify({'message': 'Funcionário atualizado com sucesso.'}) 
-             
-# --- Rota para validar e salvar UUID (POST) ---
-@app.route('/api/validate_uuid', methods=['POST'])
-def validate_uuid_post():
-    data = request.get_json()
-    uuid_val = data.get("uuid")
-
-    if not uuid_val or not is_valid_uuid(uuid_val):
-        return jsonify({"message": "Invalid UUID"}), 400
-
-    # Verifica se já existe no MongoDB
-    existing_entry = collection.find_one({"uuid": uuid_val})
-    if existing_entry:
-        return jsonify({"message": "UUID already exists in the database"}), 409
-
-    # Insere no MongoDB
-    collection.insert_one({"uuid": uuid_val})
-    return jsonify({"message": "UUID saved successfully"}), 201
-
-# --- Rota para validar UUID sem salvar (GET) ---
-@app.route('/validate_uuid/<uuid_val>', methods=['GET'])
-def validate_uuid_get(uuid_val):
-    if is_valid_uuid(uuid_val):
-        return {"message": "Valid UUID"}
-    return {"message": "Invalid UUID"}, 400
-
-# --- Rota para buscar todos os UUIDs no MongoDB ---
-@app.route('/api/uuids', methods=['GET'])
-def get_uuids():
-    uuids = list(collection.find({}, {"_id": 0, "uuid": 1}))  # Remove o _id do retorno
-    return jsonify({"uuids": uuids})
 
 # --- Outras rotas simples ---
 @app.route('/')
@@ -674,9 +627,8 @@ def list_routes():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
-    #pp.run(debug=True, port=5000)
-     # Inicia o servidor Flask
     run_simple('127.0.0.1', 5000, app, use_reloader=True)
+    
 #if __name__ == "__main__":
     #local_file = "C:/Users/felipe.rsantos/Downloads/Projeto Recibos/PORTAL DE PAGAMENTOS CONSTRUMAQ/Backend/static"
     #storage_file = "uploads/file_on_storage.txt" 
