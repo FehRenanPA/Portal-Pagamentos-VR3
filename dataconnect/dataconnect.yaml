@@ -1,0 +1,12 @@
+specVersion: "v1beta"
+serviceId: "Portal de Pagamentos VR3"
+location: "australia-southeast2"
+schema:
+  source: "./schema"
+  datasource:
+    postgresql:
+      database: "postgres"
+      cloudSql:
+        instanceId: "portal-pagamentos-vr3-fdc"
+      # schemaValidation: "COMPATIBLE"
+connectorDirs: ["./connector"]
