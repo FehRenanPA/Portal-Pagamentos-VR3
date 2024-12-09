@@ -47,22 +47,6 @@ initialize_firebase()
 
 ##--------- Firebase
 
-def add_to_firestore(collection_name, document_id, data):
-    firestore_client = get_firestore_client()
-    firestore_client.collection(collection_name).document(document_id).set(data)
-    print(f"Dados adicionados à coleção {collection_name} com ID {document_id}")
-
-def upload_file_to_storage(local_file_path, storage_file_name):
-    try:
-        bucket = storage.bucket()
-        blob = bucket.blob(storage_file_name)
-        blob.upload_from_filename(local_file_path)
-        print(f"Arquivo {local_file_path} enviado como {storage_file_name}")
-    except Exception as e:
-        print(f"Erro durante o upload: {e}")
-
-
-
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 
@@ -624,15 +608,13 @@ def list_routes():
 
 
 #----- Teste Locais -----#
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
-    run_simple('127.0.0.1', 5000, app, use_reloader=True)
-    
 #if __name__ == "__main__":
-    #local_file = "C:/Users/felipe.rsantos/Downloads/Projeto Recibos/PORTAL DE PAGAMENTOS CONSTRUMAQ/Backend/static"
-    #storage_file = "uploads/file_on_storage.txt" 
-    # Inicialize o Firebase (caso não tenha sido feito antes)
-    #initialize_firebase()
-    # Faz o upload do arquivo
-   # upload_file_to_storage(local_file, storage_file)
+    #port = int(os.environ.get("PORT", 5000))
+    #app.run(host='0.0.0.0', port=port)
+    #run_simple('127.0.0.1', 5000, app, use_reloader=True)
+    
+if __name__ == "__main__":
+    # Inicializa o Firebase
+    initialize_firebase()
+    # Inicia o servidor Flask
+    app.run(debug=True, port=5000)
