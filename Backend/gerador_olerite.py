@@ -9,185 +9,92 @@ from openpyxl import Workbook, load_workbook
 import os
 from openpyxl.styles import Alignment, Font
 from openpyxl.utils import get_column_letter
+from pymongo import MongoClient
+from bson import ObjectId
+from salvar_dados_mongo import MongoDBHandler  # Importe a classe MongoDBHandler
+import logging
+
+
+# Configuração básica de logging
+logging.basicConfig(
+    level=logging.DEBUG,  # Nível de log (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
+
 class Gerar_olerite:
     def __init__(self, funcao):
         self.funcao = funcao
         self.margin = 20  # Margens em mm
         self.page_width, self.page_height = A4  
+        self.mongo_handler = MongoDBHandler('FUNCIONARIOS_VR3_PAGAMENTOS', 'pagamentos_periodo')
+        logging.info("Classe Gerar_olerite inicializada com sucesso.")
+
+   
+
+    def converter_datas(dado):
+        for key, value in dado.items():
+            if isinstance(value, datetime.date):  # Verifica se o valor é do tipo datetime.date
+                dado[key] = datetime.combine(value, datetime.min.time())  # Converte para datetime.datetime
+        return dado
+
 
     def gerar_sub_um(self):
-        total_pagamento = Sub_total_um.calcular_pagamento_um(self.funcao)
-        
-        buffer = BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=A4,
-                                leftMargin=0,  # Margem esquerda
-                                rightMargin=0,  # Margem direita
-                                topMargin=30,  # Margem superior
-                                bottomMargin=30)  # Margem inferior
+        logging.info("Iniciando geração do PDF.")
+        try:
+            # Calcular pagamento
+            total_pagamento = Sub_total_um.calcular_pagamento_um(self.funcao)
+            logging.debug(f"Total pagamento calculado: {total_pagamento}")
 
-        # Cabeçalho
-        elements = []
-        self._draw_header(elements)
+            # Validar se o pagamento é válido
+            if total_pagamento['sub_total_tres'] is None:
+                logging.warning("Pagamento nulo. Processo interrompido.")
+                return None
 
-        # Conteúdo
-        content = self._prepare_content(total_pagamento)
-        table = self._create_table(content)
-        elements.append(table)
+            # Geração do PDF
+            buffer = BytesIO()
+            doc = SimpleDocTemplate(buffer, pagesize=A4,
+                                    leftMargin=0,  # Margem esquerda
+                                    rightMargin=0,  # Margem direita
+                                    topMargin=30,  # Margem superior
+                                    bottomMargin=30)  # Margem inferior
 
-        for i, row in enumerate(content, 1):  # Inicia o contador com 1
-            row.insert(0, i)  # Insere o contador no início da linha
+            elements = []
+            self._draw_header(elements)
+            content = self._prepare_content(total_pagamento)
+            elements.append(self._create_table(content))
+            self._draw_footer(elements)
 
-        # Rodapé
-        self._draw_footer(elements)
-
-        doc.build(elements)
-        buffer.seek(0)
-        
-        
-        # Dados a serem exportados para Excel
-        nome = self.funcao.funcionario['nome_funcionario']
-        nome_funcao = self.funcao.funcionario['nome_funcao']
-        cpf = self.formatar_cpf(self.funcao.funcionario['numero_cpf'])  # Formata o CPF
-        valor_bruto = round(total_pagamento['sub_total_bruto'], 2)
-        valor_vale = round(total_pagamento['sub_total_dois_onze'], 2)
-        valor_total = round(total_pagamento['sub_total_tres'], 2) 
-        chave_pix = self.funcao.funcionario['chave_pix']
-        
-        
-        # Verifica se o valor de sub_total_tres é maior que 1 antes de salvar ou atualizar
-        if valor_total < 1:
-            print("Pagamento negativo não será contabilizado no relatório")
-            return buffer  # Retorna o buffer sem salvar no Excel
-        
-        
-        # Formatar a data de início e fim para o nome do arquivo
-        data_inicio = self.funcao.data_inicio.strftime("%d-%m-%Y")
-        data_fim = self.funcao.data_fim.strftime("%d-%m-%Y")
-        
-        # Nome do arquivo com as datas
-        nome_arquivo = f"relatorio_{data_inicio}_a_{data_fim}.xlsx"
-        
-        # Diretório e nome do arquivo Excel
-        diretorio = 'static'
-        arquivo_excel = os.path.join(diretorio, nome_arquivo)
-        
-        # Cria o diretório "static" se ele não existir
-        if not os.path.exists(diretorio):
-            os.makedirs(diretorio)
-        
-        # Verifica se o arquivo já existe
-        if os.path.exists(arquivo_excel):
-            # Carrega o arquivo existente
-            workbook = load_workbook(arquivo_excel)
-            sheet = workbook.active
+            doc.build(elements)
+            buffer.seek(0)
+            logging.info("Dados enviados para o MongoDB com sucesso.")
             
-            # Verifica se o nome já existe e substitui os dados, se necessário
-            for row in sheet.iter_rows(min_row=2):  # Ignora o cabeçalho
-                if row[1].value == nome:  # Verifica se o nome já está presente
-                    # Substitui a linha existente
-                    row[2].value = nome_funcao
-                    row[3].value = cpf
-                    row[4].value = valor_bruto
-                    row[5].value = valor_vale
-                    row[6].value = valor_total
-                    row[7].value = chave_pix
-                    row[8].value = "o mesmo"
-                    break
-            else:
-                # Se o nome não foi encontrado, adiciona uma nova linha
-                # Calcular o próximo número de linha baseado no maior valor da coluna A
-                max_contador = max([cell.value for cell in sheet['A'] if isinstance(cell.value, int)], default=0)
-                contador_linha = max_contador + 1  # Incrementa 1 ao valor máximo encontrado
-                sheet.append([contador_linha, nome, nome_funcao, cpf, valor_bruto, valor_vale, valor_total, chave_pix, "o mesmo"])
-        else:
-            # Se o arquivo não existir, cria um novo
-            workbook = Workbook()
-            sheet = workbook.active
-            sheet.title = "Dados do Funcionário"
-            
-            data_inicio_formatada = (self.funcao.data_inicio).strftime('%d.%m') 
-            data_fim_formatada = (self.funcao.data_fim).strftime('%d.%m.%Y')
-            
-            headers_geral = [f"RELAÇÃO DE PAGAMENTO  EQUIPE PEDRO DO PERIODO    {data_inicio_formatada}   Á   {data_fim_formatada} "]
-            sheet.append(headers_geral)
-
-            # Adiciona cabeçalhos
-            headers = ["N°","Nome", "Função","CPF", "Valor", "Desc. Vales", "Liquido","Chave PIX", "Titular"]
-            sheet.append(headers)
-            
-                # Definir a formatação do cabeçalho (negrito e centralizado)
-            for col in range(1, len(headers) + 1):
-                column_letter = get_column_letter(col)
-                sheet[column_letter + "1"].font = Font(bold=True)
-                sheet[column_letter + "1"].alignment = Alignment(horizontal="left", vertical="center")
-                
-            # Adiciona novos dados na planilha
-            contador_linha = 1  # Começa com 1
-            data = [contador_linha, nome, nome_funcao, cpf, valor_bruto, valor_vale, valor_total, chave_pix, "o mesmo"]
-            sheet.append(data)
-
-
-        # Salva o arquivo Excel
-        workbook.save(arquivo_excel)
-        return buffer
-    
-    # Função para formatar o CPF no padrão 000.000.000-00
-    def formatar_cpf(self, cpf):
-        # Remove qualquer caractere não numérico
-        cpf = ''.join(filter(str.isdigit, str(cpf)))
         
-        # Formata o CPF se for válido (11 caracteres)
-        if len(cpf) == 11:
-            return f"{cpf[:3]}.{cpf[3:6]}.{cpf[6:9]}-{cpf[9:]}"
-        else:
-            return cpf  # Caso o CPF não tenha 11 números, retorna ele sem formato
-     
-    def _draw_date_header(self, date, elements):
-        """
-        Adiciona um cabeçalho para a data.
-        """
-        elements.append(f"Data: {date}")
-        elements.append("<br/>")
 
-    def _draw_header(self, elements):
-        data_inicio_formatada = (self.funcao.data_inicio).strftime('%d/%m/%Y') 
-        data_fim_formatada = (self.funcao.data_fim).strftime('%d/%m/%Y')
-         # Texto do cabeçalho
-        header_text = f"Relação de Contas dirias. Periodo {data_inicio_formatada} até {data_fim_formatada}"
+            # Dados a serem salvos no MongoDB
+            dados = {
+                "nome": self.funcao.funcionario['nome_funcionario'],
+                "equipe": self.funcao.funcionario['equipe'],
+                "funcao": self.funcao.funcionario['nome_funcao'],
+                "cpf": self.funcao.funcionario['numero_cpf'],
+                "chave_pix": self.funcao.funcionario['chave_pix'],
+                "valor_bruto": round(total_pagamento['sub_total_bruto'], 2),
+                "valor_vale": round(total_pagamento['sub_total_dois_onze'], 2),
+                "valor_total": round(total_pagamento['sub_total_tres'], 2) ,
+                "data_inicio": self.funcao.data_inicio.strftime('%d/%m/%y'),
+                "data_fim": self.funcao.data_fim.strftime('%d/%m/%y')
+            }
+           
+
+            # Inserir no MongoDB
+            id_salvo = self.mongo_handler.inserir_ou_atualizar_dado(dados)
+            logging.info(f"Dados salvos no MongoDB com ID: {id_salvo}")
+
+            return buffer
         
-        elements.append(header_text)
-        elements.append("<br/>")
-
-    def _draw_footer(self, elements):
-        """
-        Adiciona o rodapé.
-        """
-        elements.append("Rodapé")
-        elements.append("<br/>")
-
-    def _prepare_content(self, total_pagamento):
-        """
-        Prepara os dados para a tabela.
-        """
-        content = [
-            [self.funcao.funcionario['nome_funcionario'], self.funcao.funcionario['nome_funcao'], self.funcao.funcionario['numero_cpf'], total_pagamento['sub_total_bruto'], total_pagamento['sub_total_dois_onze'], total_pagamento['sub_total_tres'], self.funcao.funcionario['chave_pix'], "", self.funcao.data_pagamento.strftime("%d/%m/%Y")]
-        ]
-        return content
-
-    def _create_table(self, content):
-        """
-        Cria a tabela.
-        """
-        table = Table(content)
-        table.setStyle(TableStyle([
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ]))
-        return table    
+        except Exception as e:
+            logging.error(f"Erro ao ao salvar os dados nos mongoDB: {str(e)}", exc_info=True)
+            raise
 
     def _draw_header(self, elements):
         total_pagamento = self.funcao.calcular_pagamento_um()
@@ -240,9 +147,10 @@ class Gerar_olerite:
             [f"PAG. INSS ({self.funcao.funcionario['desconto_inss']:.2f}%):","","", f"{total_pagamento['sub_total_dois_seis']:.2f}"],
             [f"DESC. REFEIÇÃO ({self.funcao.funcionario['desconto_refeicao']:.2f}% de Hs Trab + Repouso):","","", f"{total_pagamento['sub_total_dois_sete']:.2f}"],
             [f"DESC.TRANSPORTE ({self.funcao.funcionario['desconto_transporte']:.2f}% de Hs Trab + Repouso):","","", f"{total_pagamento['sub_total_dois_oito']:.2f}"],
+            [f"DIF. DE CALCULA SEM ANTERIOR (+):","","", f"{total_pagamento['sub_total_dois_treze']:.2f}"],
             [f"COREÇÃO (+) :","","", f"{total_pagamento['sub_total_dois_nove']:.2f}"],
             [f"CORREÇÃO (-):","","", f"{total_pagamento['sub_total_dois_dez']:.2f}"],
-            [f"PARC. ADIANTAMENTO SALARIAL (-):","","", f"{total_pagamento['sub_total_dois_onze']:.2f}"],
+            [f"PARC. DE ADIANTAMENTO SALARIAL (-):","","", f"{total_pagamento['sub_total_dois_onze']:.2f}"],
             [f"SALDO A RECEBER:","","", f"{total_pagamento['sub_total_tres']:.2f}"],
             ["Obs: Comunicamos que providencie sua documentação completa para a realização do exame adimissional (ASO) e", "",""],
             ["Registro Legal  na Empresa.", "", ""]
@@ -255,18 +163,18 @@ class Gerar_olerite:
                     ('ALIGN', (0, 0), (-1, -1), 'LEFT'), # Alinhamento à esquerda
                     ('ALIGN', (1, 0), (-1, -1), 'RIGHT'), # Alinhamento à direita para a segunda coluna
                     ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'), # Fonte
-                    ('FONTSIZE', (0, 0), (-1, -1), 12), # Tamanho da fonte
+                    ('FONTSIZE', (0, 0), (-1, -1), 11), # Tamanho da fonte
                     ('BOTTOMPADDING', (0, 0), (-1, 0), 12),  # Padding na parte inferior do cabeçalho   
-                    ('FONTSIZE', (0, -1), (-1, -1), 12),  # Tamanho da fonte para a última linha
-                    ('FONTSIZE', (0, 20), (-1, 20), 10),  # Tamanho da fonte para a linha 20 (índice 19)
-                    ('FONTSIZE', (0, 21), (-1, 21), 10),  # Tamanho da fonte para a linha 21 (índice 20)
-                    ('ALIGN', (0, 20), (-1, 20), 'LEFT'),  # Alinhamento à esquerda para a linha 20
-                    ('SPAN', (0,20), (3, 20)),  # Faz com que a linha 20 ocupe as quatro colunas
+                    ('FONTSIZE', (0, -1), (-1, -1), 11),  # Tamanho da fonte para a última linha
+                    ('FONTSIZE', (0, 20), (-1, 20), 11),  # Tamanho da fonte para a linha 20 (índice 19)
+                    ('FONTSIZE', (0, 21), (-1, 22), 11),  # Tamanho da fonte para a linha 21 (índice 21)
+                    ('ALIGN', (0, 21), (-1, 21), 'LEFT'),  # Alinhamento à esquerda para a linha 20
+                    ('SPAN', (0,21), (3, 21)),  # Faz com que a linha 20 ocupe as quatro colunas
                     # Negrito para "SUB-TOTAL 1" e "SUB-TOTAL 2" e a primeira Linha
                     ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),  # Negrito para 1 linhas'
                     ('FONTNAME', (0, 12), (-1, 12), 'Helvetica-Bold'), # Negrito para "SUB-TOTAL 2"
                     ('FONTNAME', (0, 7), (-1, 7), 'Helvetica-Bold'),  # Negrito para "SUB-TOTAL 1"
-                    ('FONTNAME', (0, 19), (-1, 19), 'Helvetica-Bold') # Negrito para "SUB-TOTAL 3"
+                    ('FONTNAME', (0, 20), (-1, 20), 'Helvetica-Bold') # Negrito para "SUB-TOTAL 3"
                 
                     
                     

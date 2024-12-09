@@ -27,7 +27,7 @@ yarn-error.log*
 *.env
 *.cfg
 venv/
-Backend/serviceAccountKey.json
+
 
 
 

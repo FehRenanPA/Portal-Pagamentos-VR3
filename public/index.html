@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal de Pagamentos VR3 LTDA</title>
-    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
@@ -15,7 +14,7 @@
     <link rel="stylesheet" href="style.css"> <!-- Adicione esta linha -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="style.css"> <!-- Adicione esta linha -->    
         
 </head>
@@ -54,7 +53,7 @@
         <span class="close">&times;</span>
         <h2>Editar Funcionário</h2>
         <form id="editForm">
-         <input type="hidden" id="data-id" name="data-id" value=""> <!-- Campo oculto para o ID do funcionário -->
+         <input type="hidden" id="_id" name="_id" value=""> <!-- Campo oculto para o ID do funcionário -->
             <div class="input-row">
                 <div class="form-group">
                     <label for="nome_funcionario">Nome Funcionário:</label>
@@ -295,8 +294,12 @@
                     <input type="number" step="0.01" id="correcao_negativa" name="correcao_negativa" required placeholder="0.00">  
                 </div>
                 <div class="form-group">
-                    <label for="parcela_vale"> Parc. de Adiantamento de Salario (-):</label>
+                    <label for="parcela_vale"> Parc. Adiant. de Salario (-):</label>
                     <input type="number" step="0.01" id="parcela_vale" name="parcela_vale" required placeholder="0.00">  
+                </div>
+                <div class="form-group">
+                    <label for="diferenca_calculo"> Dif. de Cal. Sema. Anterior (+):</label>
+                    <input type="number" step="0.01" id="diferenca_calculo" name="diferenca_calculo" required placeholder="0.00">  
                 </div>
             </div>
             <button type="button" id="gerarDocumentoButton">Gerar Documento</button> 
@@ -347,20 +350,29 @@
 </div>
 <!-- Modal para Baixar Excel -->
 <div id="modal-excel" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
-    <div style="background-color: white; padding: 20px; border-radius: 10px; max-width: 700px; width: 90%; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
-        <h2 style="text-align: center;">Baixar Arquivo Excel</h2>
+    <div style="background-color: white; padding: 20px; border-radius: 5px; max-width: 700px; width: 100%; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+        <h2 style="text-align: center;">Baixar Relatório</h2>
         
-        <!-- Campo de seleção de arquivos -->
-        <div class="input-row" style="margin-bottom: 20px;">
+        <!-- Campo de seleção de data -->
+        <div class="input-row">
             <div class="form-group">
-                <label for="lista-arquivos-excel">Escolha um Arquivo:</label>
-                <select id="lista-arquivos-excel" class="form-control" onchange="exibirBotoesExcel()">
-                    <option value="" disabled selected>Escolha um arquivo</option>
-                    <!-- Arquivos serão carregados aqui -->
-                </select>
+                <label for="data_inicio_relatorio">Data Início:</label>
+                <input type="date" id="data_inicio_relatorio" name="data_inicio_relatorio" required placeholder="EX: dd/mm/aaaa">
+            </div>
+            <div class="form-group">    
+                <label for="data_fim_relatorio">Data Fim:</label>
+                <input type="date" id="data_fim_relatorio" name="data_fim_relatorio" required placeholder="EX: dd/mm/aaaa">
+            </div>
+        </div>   
+
+        <!-- Multi-select com checkboxes (agora usando div) -->
+        <div class="form-group" style="margin-top: 20px;">
+            <label>Escolha uma ou mais equipes:</label>
+            <div id="lista-arquivos-excel">
+                <!-- Checkboxes serão carregados aqui -->
             </div>
         </div>
-        
+
         <!-- Botões "Baixar" e "Cancelar" -->
         <div id="opcoes-baixar-excel" style="display:none; margin-top: 20px; display: flex; justify-content: flex-start;">
             <button onclick="baixarArquivoExcelSelecionado()" style="background-color: blue; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-right: 10px;">Baixar</button>
@@ -368,6 +380,7 @@
         </div>
     </div>
 </div>
+
 
         <script src="script.js"></script> <!-- Link para o JS --> 
 </body>
@@ -391,82 +404,182 @@
         document.getElementById('name_funcionario').value = '';
         showTab('lista'); // Mostra a aba de cargos ao carregar
     });
- //________________________Baixar Excell_________________________________________   
-// Função para abrir o modal de download do Excel
-function abrirModalExcel() {
-    // Exibir o modal
-    document.getElementById("modal-excel").style.display = "flex";
-    
-    // Fazer uma requisição para o backend para listar os arquivos
-    fetch('http://127.0.0.1:5000/api/listar_arquivos')
-        .then(response => {
-            // Verificar se a resposta foi bem-sucedida (status 200)
-            if (!response.ok) {
-                throw new Error('Erro ao carregar os arquivos');
-            }
-            return response.json();  // Converte a resposta para JSON
-        })
-        .then(data => {
-            // Agora, data é o objeto JSON retornado do servidor
-            console.log(data);  // Verifique o que veio no JSON no console
-            const arquivos = data.arquivos;  // A lista de arquivos está em 'arquivos'
-            const select = document.getElementById("lista-arquivos-excel");
+ //________________________Baixar Excell_________________________________________ 
 
-            // Limpa o conteúdo atual da lista
-            select.innerHTML = '<option value="" disabled selected>Escolha um arquivo</option>';
-            
-            // Preenche o select com os arquivos disponíveis
-            arquivos.forEach(arquivo => {
-                const option = document.createElement("option");
-                option.value = arquivo;
-                option.textContent = arquivo;
-                select.appendChild(option);
-            });
-        })
-        .catch(error => {
-            console.error('Erro ao carregar os arquivos:', error);
-            alert('Erro ao carregar os arquivos. Tente novamente.');
-        });
+  //---- Função para carregar os checkboxes dentro do modal
+  function carregarCheckboxes(opcoes) {
+    const container = document.getElementById('lista-arquivos-excel');
+    container.innerHTML = ''; // Limpa as opções anteriores
+
+    // Filtra as equipes distintas
+    const equipesUnicas = new Set(opcoes.map(opcao => opcao.equipe));  // Extrai e filtra as equipes únicas
+
+    // Adiciona os checkboxes ao modal
+    equipesUnicas.forEach(equipe => {
+        const checkboxWrapper = document.createElement('div');
+        checkboxWrapper.classList.add('checkbox-wrapper');  // Aplica a classe CSS
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = equipe; // Usando o nome da equipe para identificar a opção
+
+        const label = document.createElement('label');
+        label.textContent = equipe;  // Exibe o nome da equipe
+
+        checkboxWrapper.appendChild(checkbox);
+        checkboxWrapper.appendChild(label);
+        container.appendChild(checkboxWrapper);
+    });
+}   
+
+// Função para capturar os arquivos selecionados
+function baixarArquivoExcelSelecionado() {
+    const checkboxes = document.querySelectorAll('#lista-arquivos-excel input[type="checkbox"]:checked');
+    const selecionados = Array.from(checkboxes).map(checkbox => checkbox.value);
+
+    if (selecionados.length > 0) {
+        alert("Equipes selecionadas: " + selecionados.join(", "));
+        console.log("Equipes selecionadas:", selecionados);
+        // Aqui você pode realizar a ação com as equipes selecionadas
+    } else {
+        alert("Por favor, selecione ao menos uma equipe!");
+    }
 }
 
-// Função para fechar o modal de download do Excel
+// Função para fechar o modal
 function fecharModalExcel() {
     document.getElementById("modal-excel").style.display = "none";
 }
 
-// Função para exibir os botões de baixar após selecionar um arquivo
-function exibirBotoesExcel() {
-    const select = document.getElementById("lista-arquivos-excel");
-    const botaoBaixar = document.getElementById("opcoes-baixar-excel");
-    
-    if (select.value) {
-        // Exibir os botões "Baixar" e "Cancelar"
-        botaoBaixar.style.display = "block";
-    } else {
-        // Ocultar os botões se nenhum arquivo for selecionado
-        botaoBaixar.style.display = "none";
-    }
+// Função para abrir o modal quando o botão for clicado
+function abrirModalExcel() {
+    // Realiza uma requisição para o backend para buscar as equipes
+    fetch('http://127.0.0.1:5000/api/listar_documentos')
+        .then(response => response.json())
+        .then(data => {
+            // Carrega as equipes no modal, passando os dados recebidos do servidor
+            carregarCheckboxes(data);
+            // Exibe o modal
+            document.getElementById("modal-excel").style.display = "flex";
+        })
+        .catch(error => console.error("Erro ao carregar equipes:", error));
 }
 
-// Função para baixar o arquivo Excel selecionado
+// Função para formatar a data no formato "dd/mm/yy"
+function formatarData(data) {
+    const partes = data.split('-'); // Divide a data no formato "yyyy-mm-dd"
+    const ano = partes[0].slice(-2); // Obtém os últimos dois dígitos do ano
+    const mes = partes[1];
+    const dia = partes[2];
+    return `${dia}/${mes}/${ano}`; // Retorna no formato "dd/mm/yy"
+}
+//---- Envia dados de data e Equipe para gerar o relatorio
+
 function baixarArquivoExcelSelecionado() {
-    const select = document.getElementById("lista-arquivos-excel");
-    const arquivoSelecionado = select.value;
+    // Captura as datas
+    const dataInicioInput = document.getElementById('data_inicio_relatorio').value;
+    const dataFimInput = document.getElementById('data_fim_relatorio').value;
+
+    // Formatação
+    const dataInicio = formatarData(dataInicioInput);
+    const dataFim = formatarData(dataFimInput);
+
+    // Captura as equipes selecionadas
+    const checkboxes = document.querySelectorAll('#lista-arquivos-excel input[type="checkbox"]:checked');
+    const equipesSelecionadas = Array.from(checkboxes).map(checkbox => checkbox.value);
+
+    // Validações
+    if (!dataInicio || !dataFim) {
+        alert("Por favor, preencha as datas de início e fim!");
+        return;
+    }
+
+    if (equipesSelecionadas.length === 0) {
+        alert("Por favor, selecione ao menos uma equipe!");
+        return;
+    }
+
+    // Log para depuração: verificar o conteúdo das variáveis antes de enviar
+    console.log("Data Início:", dataInicio);
+    console.log("Data Fim:", dataFim);
+    console.log("Equipes Selecionadas:", equipesSelecionadas);
+
+    // Monta o payload para a API /api/relatorio_periodo
+    const payloadRelatorio = {
+        equipe: equipesSelecionadas,
+        data_inicio: dataInicio,
+        data_fim: dataFim
+    };
+
+    console.log("Payload Enviado:", payloadRelatorio); // Verifique se o payload está correto
+
+    fetch('http://127.0.0.1:5000/api/relatorio_periodo', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payloadRelatorio)
+    })
+    .then(response => {
+        if (response.ok) {
+            return response.json(); // Recebe os dados da API /api/relatorio_periodo
+        } else {
+            return response.json().then(errorData => {
+                throw new Error(errorData.erro || errorData.message || "Erro desconhecido ao buscar o relatório.");
+            });
+        }
+    })
+    .then(data => {
+        console.log("Resposta da API /api/relatorio_periodo:", data);
     
-    if (arquivoSelecionado) {
-        // A lógica de download do arquivo pode ser implementada aqui, por exemplo:
-        const url = `http://localhost:5000/baixar_excel/${arquivoSelecionado}`;
+        const documentos = Array.isArray(data) ? data : data.documentos;
+    
+        if (!documentos || documentos.length === 0) {
+            throw new Error("Não há documentos disponíveis para gerar o relatório.");
+        }
+    
+        const payloadGerarRelatorio = {
+            documentos: documentos
+        };
+    
+        return fetch('http://127.0.0.1:5000/api/gerar_relatorio', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payloadGerarRelatorio)
+        });
+    })
+    .then(response => {
+        if (response.ok) {
+            return response.blob(); // Recebe o arquivo gerado como Blob
+        } else {
+            return response.json().then(errorData => {
+                throw new Error(errorData.erro || errorData.message || "Erro ao gerar o relatório.");
+            });
+        }
+    })
+    .then(blob => {
+        // Dispara o download do arquivo gerado
+        const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = arquivoSelecionado;
+        a.download = 'relatorio_gerado.xlsx'; // Nome sugerido para o download
         document.body.appendChild(a);
         a.click();
         a.remove();
-        
-        // Fechar o modal após o download
-        fecharModalExcel();
-    }
+        window.URL.revokeObjectURL(url); // Limpa o recurso criado
+    })
+    .catch(error => {
+        console.error("Erro ao gerar o relatório:", error);
+        alert(`Erro ao gerar o relatório: ${error.message}`);
+    });     
 }
+
+
+
+
+
 
 //_______________________Lista de Funcionarios ________________________________
     async function fetchCargos() {
@@ -547,8 +660,8 @@ function baixarArquivoExcelSelecionado() {
                     const actionsCell = row.insertCell(10);
                     const editButton = document.createElement('button');
                     editButton.textContent = 'Editar';
-                    editButton.onclick = () =>  {
-                        const uidFuncionario = option.textContent; 
+                    editButton.onclick   = () =>  {
+                        const uidFuncionario = funcionario._id;
                         const nomeFuncionario = funcionario.nome_funcionario || option.textContent; // Nome do funcionário
                         const nomefuncao = funcionario.nome_funcao;
                         const equipe=funcionario.equipe;
@@ -577,6 +690,7 @@ function baixarArquivoExcelSelecionado() {
                     actionsCell.appendChild(editButton);
                 }
             }
+            
             
             // Atualiza o contador de registros no HTML
             totalRegistrosElement.textContent = `Total: ${totalFuncionarios}`;
@@ -687,8 +801,9 @@ function editarFuncionarioModal(uidFuncionario, nomeFuncionario, nomefuncao, equ
     modal.style.display = 'block';
      // Atribuindo o UID ao campo oculto
     console.log("UID do Funcionário a ser atribuído:", uidFuncionario);
+    console.log("UID do Funcionário Teste:", uidFuncionario);
 
-    document.getElementById('data-id').value = uidFuncionario; // Atribuindo ao campo oculto
+    document.getElementById('_id').value = uidFuncionario; // Atribuindo ao campo oculto
     document.getElementById('nome_funcionario').value = nomeFuncionario;
     document.getElementById('nome_funcao').value = nomefuncao;
     document.getElementById('equipe').value = equipe;
@@ -720,14 +835,14 @@ function editarFuncionarioModal(uidFuncionario, nomeFuncionario, nomefuncao, equ
             editForm.addEventListener('submit', async function(event) {
                 event.preventDefault(); // Impede o envio padrão do formulário  
     
-                const funcionarioId = editForm.getAttribute('data-id'); // Obtém o ID do funcionário
+                const funcionarioId =  editForm.dataset.id; // Obtém o ID do funcionário
                 const formData = {
                     nome_funcionario: document.getElementById('nome_funcionario').value.trim(),
                     nome_funcao: document.getElementById('nome_funcao').value.trim(),
                     equipe: document.getElementById('equipe').value.trim(),
                     numero_cpf: document.getElementById('numero_cpf').value.trim(),
                     chave_pix: document.getElementById('chave_pix').value.trim(),
-                    valor_hora_base: parseFloat(document.getElementById('valor_hora_base').value),
+                    valor_hora_base: parseFloat(document.getElementById('valor_hora_base').value) ,
                     valor_hora_extra_um: parseFloat(document.getElementById('valor_hora_extra_um').value),
                     valor_hora_extra_dois: parseFloat(document.getElementById('valor_hora_extra_dois').value),
                     adicional_noturno: parseFloat(document.getElementById('adicional_noturno').value),
@@ -740,7 +855,7 @@ function editarFuncionarioModal(uidFuncionario, nomeFuncionario, nomefuncao, equ
                     desconto_refeicao: parseFloat(document.getElementById('desconto_refeicao').value),
                     desconto_transporte: parseFloat(document.getElementById('desconto_transporte').value),
                 };
-                 console.log('Dados enviados:', formData);
+                 console.log('Dados enviados:', );
     
                 try {
                     const response = await fetch(`http://127.0.0.1:5000/api/funcionario/${uidFuncionario}`, {
@@ -756,6 +871,7 @@ function editarFuncionarioModal(uidFuncionario, nomeFuncionario, nomefuncao, equ
                         try {
                             const error = await response.json();
                             errorMessage = error.message || 'Erro desconhecido';
+                            
                         } catch (jsonError) {
                             errorMessage = await response.text();
                         }
@@ -773,8 +889,8 @@ function editarFuncionarioModal(uidFuncionario, nomeFuncionario, nomefuncao, equ
                     location.reload();
     
                 } catch (error) {
-                    console.error('Erro ao salvar os dados:', error);
-                    alert('Erro ao salvar os dados. Tente novamente.');
+                    console.error('Erro completo:', error);
+                    alert(`Erro ao salvar os dados: ${error.message || 'Erro desconhecido'}`);
                 }
             });
         } else {
@@ -791,8 +907,9 @@ function editarFuncionarioModal(uidFuncionario, nomeFuncionario, nomefuncao, equ
 
         event.preventDefault(); // Impede o envio padrão do formulário
 
-        // Coleta e estrutura os dados do formulário
+        // Coleta e estrutura os dados do formulár
         const funcionariData = {
+            //_id : uidFuncionario,
             nome_funcionario: document.getElementById('nome_funcionario_c').value.trim(),
             numero_cpf: document.getElementById('numero_cpf_c').value.trim(),
             chave_pix: document.getElementById('chave_pix_c').value.trim(),
@@ -828,9 +945,7 @@ function editarFuncionarioModal(uidFuncionario, nomeFuncionario, nomefuncao, equ
                 document.getElementById('message').textContent = data.message;  // Exibe a mensagem de sucesso
 
                 alert('Cadastro de funcionário criado com sucesso!');
-                // Atualiza a lista de cargos (caso necessário)
                 fetchCargos();
-                // Atualiza a página
                 location.reload();
             } else {
                 const errorData = await response.json();
@@ -839,9 +954,7 @@ function editarFuncionarioModal(uidFuncionario, nomeFuncionario, nomefuncao, equ
             }
         } catch (error) {
             alert('Cadastro de funcionário criado com sucesso!');
-            // Atualiza a lista de cargos (caso necessário)
             fetchCargos();
-            // Atualiza a página
             location.reload();
 
         }
@@ -849,94 +962,82 @@ function editarFuncionarioModal(uidFuncionario, nomeFuncionario, nomefuncao, equ
 
     
  //__________________________ Select para a criação do recibo. ___________________________  
-   $(document).ready(function() {
+ $(document).ready(function () {
+    // Inicialização do Select2 no campo de seleção
     $('#name_funcionario').select2({
         placeholder: "Selecione um funcionário",
         allowClear: true,
         width: 'resolve',
         tags: true
-
     });
-    
 
-    async function loadFuncionarios() { 
+    // Função para carregar a lista de funcionários e preencher o dropdown
+    async function loadFuncionarios() {
         try {
             const response = await fetch('http://127.0.0.1:5000/api/funcionarios');
             const funcionarios = await response.json();
-            //console.log("Funcionários recebidos 00:", funcionarios);
-    
+
             const selectElement = document.getElementById('name_funcionario');
-            //console.log("selectElement:", selectElement); // Verifique se o elemento foi encontrado
             selectElement.innerHTML = ''; // Limpa as opções atuais
-    
-            // Adiciona a opção padrão "Selecione um funcionário"
+
+            // Adiciona a opção padrão
             const defaultOption = document.createElement('option');
             defaultOption.value = '';
             defaultOption.textContent = 'Selecione um funcionário';
-            defaultOption.disabled = false; // Desabilita a opção padrão
-            defaultOption.selected = false; // Marca como selecionada
             selectElement.appendChild(defaultOption);
-    
-            let primeiroFuncionarioAdicionado = true; // Variável para controlar se o primeiro funcionário foi adicionado
-    
-            for (const key in funcionarios) {
-                if (funcionarios[key].nome_funcionario) {
+
+            // Itera sobre os funcionários e cria as opções do dropdown
+            for (const uid in funcionarios) {
+                const funcionario = funcionarios[uid];
+                if (funcionario.nome_funcionario) {
                     const option = document.createElement('option');
-                    option.value = key; // Chave UID para busca posterior
-                    option.textContent = funcionarios[key].nome_funcionario; // Exibe nome do funcionário
-                    option.dataset.nomeFuncao = funcionarios[key].nome_funcao || ''; // Armazena nome_funcao como atributo data
-                    
-                    //Logg
-                    //console.log(`Adicionando opção: ${option.textContent} com key: ${key} e nome_funcao: ${option.dataset.nomeFuncao}`);
-    
-                    selectElement.appendChild(option);
-    
-                    // Marca o primeiro funcionário adicionado como selecionado
-                    if (!primeiroFuncionarioAdicionado) {
-                        option.selected = true; // Marca como selecionado
-                        primeiroFuncionarioAdicionado = true; // Atualiza a variável
-                    }
+                    option.value = funcionario._id; // Define o UID (_id) como valor
+                    option.textContent = funcionario.nome_funcionario; // Define o nome do funcionário como texto
+                    option.dataset.nomeFuncao = funcionario.nome_funcao || ''; // Define o nome da função como atributo data
+                    selectElement.appendChild(option); // Adiciona a opção ao dropdown
                 } else {
-                    console.warn(`Funcionário com key: ${key} não tem nome_funcionario.`);
+                    console.warn(`Funcionário sem nome: ${uid}`);
                 }
             }
         } catch (error) {
             console.error("Erro ao carregar funcionários:", error);
         }
     }
- // Evento para preencher os campos quando um funcionário é selecionado
-$('#name_funcionario').on('change', (event) => {
-    const selectedOption = event.target.options[event.target.selectedIndex];
 
-    // Verifica se há uma opção selecionada
-    if (selectedOption) {
-        console.log(`Funcionário selecionado: ${selectedOption.textContent}`);
-        console.log(`Chave selecionada: ${selectedOption.value}`);
-        console.log(`Nome da função: ${selectedOption.dataset.nomeFuncao}`);
-        
-        // Preenche o campo 'name_funcionario' com o nome do funcionário
-        document.getElementById('name_funcionario').value = selectedOption.textContent;
+    // Evento para preencher os campos quando um funcionário é selecionado
+    $('#name_funcionario').on('change', (event) => {
+        const selectedOption = event.target.options[event.target.selectedIndex];
 
-        // Preenche o campo 'nome_funcao' com o valor armazenado no data-attribute
-        document.getElementById('nome_cargo').value = selectedOption.dataset.nomeFuncao; // Corrigido de 'nome_cago' para 'nome_funcao'
-        
-        // Salva a chave do funcionário na variável
-        funcionarioChave = selectedOption.value; 
-        nomeFuncionarioSelecionado = selectedOption.value;
-        nomeDoFuncionario=selectedOption.textContent;
-        console.log(`Nome do funcionário selecionado salvo: ${nomeFuncionarioSelecionado}`);
-   
-    } else {
-        console.warn("Nenhuma opção válida selecionada.");
-    }
-});
+        // Verifica se há uma opção selecionada
+        if (selectedOption) {
+            console.log(`Funcionário selecionado: ${selectedOption.textContent}`);
+            console.log(`Chave selecionada: ${selectedOption.value}`);
+            console.log(`Nome da função: ${selectedOption.dataset.nomeFuncao}`);
 
+            // Preenche o campo 'name_funcionario' com o nome do funcionário
+            document.getElementById('name_funcionario').value = selectedOption.textContent;
 
+            // Preenche o campo 'nome_cargo' com o valor armazenado no data-attribute
+            document.getElementById('nome_cargo').value = selectedOption.dataset.nomeFuncao || ''; 
+
+            // Salva a chave do funcionário e outros dados na variável
+            funcionarioChave = selectedOption.value;    
+            nomeFuncionarioSelecionado = selectedOption.value;
+            const nomeFuncaoSelecionada = selectedOption.dataset.nomeFuncao;
+
+            console.log(`Chave do funcionário salva: ${funcionarioChave}`);
+            console.log(`Nome do funcionário salvo: ${nomeFuncionarioSelecionado}`);
+            console.log(`Função salva: ${nomeFuncaoSelecionada}`);
+        } else {
+            console.warn("Nenhuma opção válida selecionada.");
+        }
+    });
+
+    // Carrega a lista de funcionários ao carregar a página
     loadFuncionarios();
 });
 
-    
-    
+
     
 // ____________________________Cadastro para pagamento e imprimir PDF -> Gerador do PDF_____________________
     document.getElementById('gerarDocumentoButton').addEventListener('click', async function(event) {
@@ -955,7 +1056,7 @@ $('#name_funcionario').on('change', (event) => {
             return;
         }
     
-        const funcionarioId = funcionarioChave;
+        const funcionarioId= funcionarioChave || funcionarioSelect.value;
 
         // Verifica se um funcionário foi selecionado
         if (!funcionarioId) {
@@ -964,7 +1065,7 @@ $('#name_funcionario').on('change', (event) => {
         }
     
         // Continue com o processamento do formulário...
-        console.log('Funcionário selecionado agora:', funcionarioId);
+        console.log('Funcionário selecionado agora  foi e será:', funcionarioId);
          
 
         // Fetch para obter os dados do cargo
@@ -974,6 +1075,7 @@ $('#name_funcionario').on('change', (event) => {
         return;
         }
         const funcionario = await funcionarioResponse.json();
+        console.log('Funcionário encontrado:', funcionario);
 
         //Definir um valor default em caso de valor zerado ou null
         const checkAndParse = (value) => {  
@@ -1008,6 +1110,7 @@ $('#name_funcionario').on('change', (event) => {
         reciboData.data_pagamento= formatDate(reciboData.data_pagamento);
         reciboData.valor_diarias =checkAndParse(reciboData.valor_diarias, 10);
         reciboData.parcela_vale =checkAndParse(reciboData.parcela_vale, 10);
+        reciboData.diferenca_calculo =checkAndParse(reciboData.diferenca_calculo, 10);
 
         console.log('Valor de name_funcionario:', reciboData.name_funcionario);
         console.log('Valor de nome_cargo:', reciboData.nome_cargo);
@@ -1015,11 +1118,12 @@ $('#name_funcionario').on('change', (event) => {
 
 
         // Verifique se todos os campos obrigatórios estão preenchidos
-        const requiredFields = ['data_inicio','data_fim', 'data_pagamento','nome_cargo','name_funcionario','horas_trabalhadas', 'horas_extras_um', 'horas_extras_dois', 'horas_noturnas', 'valor_diarias', 'correcao_positiva', 'correcao_negativa','parcela_vale'];
+        const requiredFields = ['data_inicio','data_fim', 'data_pagamento','nome_cargo','name_funcionario','horas_trabalhadas', 'horas_extras_um', 'horas_extras_dois', 'horas_noturnas', 'valor_diarias', 'correcao_positiva', 'correcao_negativa','parcela_vale','diferenca_calculo'];
 
         //Valida os dados enviados -> Valor fucionario === string // Demais tem que ser float.
         for (const field of requiredFields) {
         const value = reciboData[field];
+
         // Verifica se o campo é nome_funcionario
         if (field === 'name_funcionario'|| field === 'nome_cargo' ) {  
         if (typeof value !== 'string' || value.trim() === '') {
@@ -1061,70 +1165,87 @@ $('#name_funcionario').on('change', (event) => {
         }
         }
 
-        }   
-    
-
-        //***************************  Envie os dados para o backend ***********************
-        const response = await fetch('http://127.0.0.1:5000/api/criar_recibo', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(reciboData),
-        mode:'cors'
-
-        });
-        
-        //const responseData = await response.json();  // Caso você precise processar a resposta como JSON
+        } 
+            // Enviar os dados para o backend
+        console.log('Chegou aqui: antes de gerarRecibo');
+        await gerarRecibo(reciboData);  
         
 
-        if (response.ok) {
-
-        const contentType = response.headers.get('Content-Type');
-        if (contentType && contentType.includes('application/pdf')) {  
-        // Ler o PDF como blob
-        const blob = await response.blob();
-
-        // Cria um link para download do PDF
-        const url = window.URL.createObjectURL(blob);
-        const iframe = document.createElement('iframe');
-        iframe.style.width = '100%';
-        iframe.style.height = '600px';
-        iframe.src = url;
-        document.getElementById('documentContentPreview').innerHTML = ''; // Limpar conteúdo anterior
-        document.getElementById('documentContentPreview').appendChild(iframe);
-
-
-
-        // Configura o evento de clique no botão de imprimir PDF
-        document.getElementById('printDocumentButton').onclick =  function() { 
-            const a = document.createElement('a');
-            //const url = window.URL.createObjectURL(blob);
-            a.href = url;
-            a.download = `${nomeDoFuncionario} de ${reciboData.data_inicio} ate ${reciboData.data_fim}.pdf`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-        };
+        //***************************  Envie os dados para o backend ***********************   
+        async function gerarRecibo(reciboData) {
+            console.log('Chegou aqui: Depois de gerarRecibo'); 
         
-
-        // Configura o evento de clique no botão "Cancelar"
-        document.querySelector('.btn-secondary[data-bs-dismiss="modal"]').onclick = function() {
-            $('#documentPreviewModal').modal('hide'); // Fecha o modal
-            };
-        // Exibe o modal se necessário
-        $('#documentPreviewModal').modal('show');
-
-            } else {
-                console.error('Erro: A resposta não é um PDF. Tipo de conteúdo:', contentType);
+            // Validação dos dados obrigatórios antes de enviar para o backend
+            console.log('Dados enviados ao backend:', reciboData);
+        
+            // Verifique se os campos obrigatórios estão presentes
+            if (!reciboData.data_inicio || !reciboData.data_fim || !reciboData.name_funcionario || !reciboData.nome_cargo) {
+                console.error('Dados obrigatórios faltando!');
+                alert('Dados obrigatórios faltando!');
+                return; // Se faltar algum dado, não envia a requisição
             }
-            } else {
-            console.error('Erro ao gerar o olerite:', response.statusText);
-            alert('Funcionario Inativo ou Não cadastrado');
+        
+            try {
+                console.log('Enviando dados para o backend...');
+        
+                const response = await fetch('http://127.0.0.1:5000/api/criar_recibo', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(reciboData),
+                    mode: 'cors'
+                });
+        
+                if (response.ok) {
+                    const contentType = response.headers.get('Content-Type');
+                    if (contentType && contentType.includes('application/pdf')) {
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+        
+                        // Preencher o iframe com o PDF
+                        const iframe = document.createElement('iframe');
+                        iframe.style.width = '100%';
+                        iframe.style.height = '600px';
+                        iframe.src = url;
+                        document.getElementById('documentContentPreview').innerHTML = '';
+                        document.getElementById('documentContentPreview').appendChild(iframe);
+        
+                        // Configurar download
+                        document.getElementById('printDocumentButton').onclick = function () {
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `${funcionario.nome_funcionario} de ${reciboData.data_inicio} até ${reciboData.data_fim}.pdf`;
+                            document.body.appendChild(a);
+                            a.click();
+                            window.URL.revokeObjectURL(url);
+                            document.body.removeChild(a);
+                            console.log("Botão de download acionado.");
+                        };
+        
+                        // Fechar o modal
+                        document.querySelector('.btn-secondary[data-bs-dismiss="modal"]').onclick = function () {
+                            $('#documentPreviewModal').modal('hide');
+                        };
+        
+                        // Mostrar o modal
+                        $('#documentPreviewModal').modal('show');
+                    } else {
+                        console.error('Erro: A resposta não é um PDF. Tipo de conteúdo:', contentType);
+                    }
+                } else {
+                    const errorData = await response.json();
+                    console.error('Erro ao gerar o olerite:', errorData.error);
+                    alert('Erro ao gerar o olerite: ' + errorData.error);
+                    console.log('Erro detalhado do backend:', errorData);
+                }
+            } catch (error) {
+                console.error('Erro inesperado:', error);
+                alert('Erro inesperado ao tentar gerar o recibo.');
             }
-            
-    });
+        }
+        
+            });
 
 </script> <!-- Link para o JS --> 
 </body>
