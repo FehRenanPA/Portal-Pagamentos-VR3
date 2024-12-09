@@ -3,6 +3,7 @@ import logging
 
 
 
+
 funcionario_dict = CriarFuncionario.carregar_funcionarios()
 
 
@@ -27,6 +28,7 @@ class Sub_total_um:
         self.valor_diarias = 0
         self.mais = 0
         self.menos = 0
+        self.diferenca_calculo = 0
       
 
         
@@ -67,6 +69,9 @@ class Sub_total_um:
     def adicionar_pagamento_vale(self,valor):    
         self.parcela_vale += valor
         
+    def adicionar_diferenca_positiva(self,valor):    
+        self.diferenca_calculo += valor    
+        
     def valida_funcionario(self):
         print(f"Cargos disponíveis: {list(funcionario_dict.keys())}")
         funcionario_normalizado = self.name_funcionario.strip().lower()
@@ -75,10 +80,12 @@ class Sub_total_um:
         
         if funcionario_normalizado in funcionario_dict_normalizado:
             self.funcionario = funcionario_dict_normalizado[funcionario_normalizado]  # Armazena o objeto Funcionario
+            return True
         else:
             print("Funcionario não encontrado!")
-            return False  # Retorna False se não encontrar o cargo
-        return True  # Retorna True se encontrar o cargo
+            logging.error(f"Funcionário {self.name_funcionario} não encontrado!")
+            return False  # Retorna False se não encontrar o funcionário
+
     
     def calcular_pagamento_um(self)-> dict:
         if not self.valida_funcionario():
@@ -157,12 +164,13 @@ class Sub_total_um:
         sub_total_dois_nove = self.correcao_positiva + self.mais 
         sub_total_dois_dez =  self.correcao_negativa + self.menos 
         sub_total_dois_onze = self.parcela_vale
-        sub_total_bruto = (sub_total_dois - sub_total_dois_seis - sub_total_dois_sete - sub_total_dois_oito + sub_total_dois_nove - sub_total_dois_dez)
+        sub_total_dois_treze = self.diferenca_calculo
+        sub_total_bruto = (sub_total_dois - sub_total_dois_seis - sub_total_dois_sete - sub_total_dois_oito + sub_total_dois_nove - sub_total_dois_dez + sub_total_dois_treze)
         
         
         
        
-        sub_total_tres =(sub_total_dois - sub_total_dois_seis - sub_total_dois_sete - sub_total_dois_oito + sub_total_dois_nove - sub_total_dois_dez - sub_total_dois_onze)
+        sub_total_tres =( sub_total_bruto - sub_total_dois_onze)
         
         
         
@@ -186,7 +194,9 @@ class Sub_total_um:
         'sub_total_dois_nove' : sub_total_dois_nove,
         'sub_total_dois_dez' : sub_total_dois_dez,
         'sub_total_dois_onze' : sub_total_dois_onze,
+        'sub_total_dois_treze' : sub_total_dois_treze,
         'sub_total_bruto': sub_total_bruto,
+        
         
         
 }

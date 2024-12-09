@@ -1,25 +1,60 @@
 import json
 import os
+from pymongo import MongoClient
 from cargo import Funcionario
+from dotenv import load_dotenv
 
+load_dotenv()
+
+# URI de conexão ao MongoDB
+uri = os.getenv("MONGO_URI")
+client = MongoClient(uri)
+
+# Seleciona banco e coleção
+db = client['FUNCIONARIOS_VR3_PAGAMENTOS']
+colecao = db['funcionario']
 
 class CriarFuncionario:
     funcionario_dict = {}
 
     @staticmethod
     def carregar_funcionarios():
-         if os.path.exists('funcionario.json'):
-            with open('funcionario.json', 'r') as file:
-                funcionarios = json.load(file)
-                print(f"Funcionários carregados: {funcionarios}")
-                return funcionarios
-         return {}
+        """Carrega todos os funcionários do MongoDB ou do arquivo JSON, se o MongoDB não estiver acessível."""
+        try:
+            # Tenta carregar do MongoDB
+            funcionarios = colecao.find()  # Recupera todos os documentos da coleção
+            funcionario_dict = {str(func['_id']): func for func in funcionarios}
+            print(f"Funcionários carregados do MongoDB: {funcionario_dict}")
+            return funcionario_dict
+        except Exception as e:
+            # Se falhar, tenta carregar do arquivo JSON
+            print(f"Erro ao carregar do MongoDB: {e}. Tentando carregar do arquivo JSON...")
+            if os.path.exists('funcionario.json'):
+                with open('funcionario.json', 'r') as file:
+                    funcionarios = json.load(file)
+                    print(f"Funcionários carregados do arquivo JSON: {funcionarios}")
+                    return funcionarios
+            return {}
+
+    @staticmethod
+    def carregar_funcionario_por_id(funcionario_id):
+        """Carrega um funcionário específico pelo ID."""
+        try:
+            # Recupera o funcionário do MongoDB com o ID fornecido
+            funcionario = colecao.find_one({"_id": funcionario_id})
+            if funcionario:
+                funcionario['_id'] = str(funcionario['_id'])  # Converte o _id para string
+            return funcionario
+        except Exception as e:
+            print(f"Erro ao carregar funcionário por ID: {e}")
+            return None
 
     @staticmethod
     def criar_funcionario(data):
+        """Cria um novo funcionário e salva no MongoDB."""
         name = data['name']
         nome_funcao = data['nome_funcao']
-        equipe=data['equipe']
+        equipe = data['equipe']
         numero_cpf = data['numero_cpf']
         chave_pix = data['chave_pix']
         valor_hora_base = round(float(data['valor_hora_base']), 2)
@@ -36,147 +71,86 @@ class CriarFuncionario:
         desconto_refeicao = round(float(data['desconto_refeicao']), 2)
         desconto_transporte = round(float(data['desconto_transporte']), 2)
 
-        funcionario = Funcionario(name,nome_funcao,equipe, numero_cpf,chave_pix,valor_hora_base, adicional_noturno, valor_hora_extra_um,
-                      valor_hora_extra_dois, repouso_remunerado, valor_ferias,
-                      valor_antecipa_ferias, valor_decimo_terceiro, valor_antecipa_salario,
-                      pagamento_fgts, desconto_inss, desconto_refeicao, desconto_transporte)
+        # Cria a instância de Funcionario
+        funcionario = Funcionario(name, nome_funcao, equipe, numero_cpf, chave_pix, valor_hora_base, adicional_noturno,
+                                  valor_hora_extra_um, valor_hora_extra_dois, repouso_remunerado, valor_ferias,
+                                  valor_antecipa_ferias, valor_decimo_terceiro, valor_antecipa_salario, pagamento_fgts,
+                                  desconto_inss, desconto_refeicao, desconto_transporte)
         
-        CriarFuncionario.funcionario_dict[name] = funcionario.to_dict()
-        CriarFuncionario.salvar_funcionarios()
-        print(f"Cargo {name} criado com sucesso e adicionado ao dicionário.")  
-    
-    def to_dict(self):
-        return {
-            'name': self.name,
-            'nome_funcao': self.nome_funcao,
-            'equipe': self.equipe,
-            'numero_cpf': self.numero_cpf,
-            'chave_pix': self.chave_pix,
-            'valor_hora_base': self.valor_hora_base,
-            'valor_hora_extra_um': self.valor_hora_extra_um,
-            'valor_hora_extra_dois': self.valor_hora_extra_dois,
-            'adicional_noturno': self.adicional_noturno,
-            'repouso_remunerado': self.repouso_remunerado,
-            'valor_ferias': self.valor_ferias,
-            'valor_antecipa_ferias': self.valor_antecipa_ferias,
-            'valor_decimo_terceiro': self.valor_decimo_terceiro,
-            'valor_antecipa_salario': self.valor_antecipa_salario,
-            'pagamento_fgts': self.pagamento_fgts,
-            'desconto_inss': self.desconto_inss,
-            'desconto_refeicao': self.desconto_refeicao,
-            'desconto_transporte': self.desconto_transporte
-        }        
+        # Salva no MongoDB
+        colecao.insert_one(funcionario.to_dict())  # Salva o funcionário no MongoDB
+        print(f"Funcionário {name} criado com sucesso.")
 
-   
     @staticmethod
     def salvar_funcionarios():
+        """Salva os funcionários no arquivo JSON (caso seja necessário)."""
         with open('funcionario.json', 'w') as file:
             json.dump(CriarFuncionario.funcionario_dict, file)
+            print("Funcionários salvos no arquivo JSON.")
 
-def editar_funcionario():
-    # Carregar os dados dos funcionários
-    funcionarios = CriarFuncionario.carregar_funcionario()
-    
-    if not funcionarios:
-        print("Nenhum funcionário disponível para editar.")
-        return
-    
-    # Exibir lista de funcionários disponíveis
-    print(f"Funcionários disponíveis: {list(funcionarios.keys())}")
-    
-    # Solicitar o nome do funcionário a ser editado
-    nome_funcionario = input("Digite o nome do funcionário que deseja editar: ")
-    
-    if nome_funcionario not in funcionarios:
-        print(f"Funcionário {nome_funcionario} não encontrado.")
-        return
-    
-    # Exibir os dados atuais do funcionário
-    print(f"Dados atuais do funcionário {nome_funcionario}: {funcionarios[nome_funcionario]}")
-    
-    # Atualizar os valores do funcionário
-    funcionario_atual = funcionarios[nome_funcionario]
-    nome_funcao = input(f"Digite a nova funnçao (atual: {funcionario_atual['nome_funcao']}): ") or funcionario_atual['nome_funcao']
-    equipe = input(f"Digite a nova funnçao (atual: {funcionario_atual['equipe']}): ") or funcionario_atual['equipe']
-    numero_cpf = input(f"Digite o novo CPF (atual: {funcionario_atual['numero_cpf']}): ") or funcionario_atual['numero_cpf']
-    chave_pix = input(f"Digite a nova chave PIX (atual: {funcionario_atual['chave_pix']}): ") or funcionario_atual['chave_pix']
-    valor_hora_base = float(input(f"Digite o novo valor da hora base (atual: {funcionario_atual['valor_hora_base']}): ") or funcionario_atual['valor_hora_base'])
-    valor_hora_extra_um = float(input(f"Digite o novo valor da hora extra 50% (atual: {funcionario_atual['valor_hora_extra_um']}): ") or funcionario_atual['valor_hora_extra_um'])
-    valor_hora_extra_dois = float(input(f"Digite o novo valor da hora extra 100% (atual: {funcionario_atual['valor_hora_extra_dois']}): ") or funcionario_atual['valor_hora_extra_dois'])
-    adicional_noturno = float(input(f"Digite o novo adicional noturno (atual: {funcionario_atual['adicional_noturno']}): ") or funcionario_atual['adicional_noturno'])
-    repouso_remunerado = float(input(f"Digite o novo valor do repouso remunerado (atual: {funcionario_atual['repouso_remunerado']}): ") or funcionario_atual['repouso_remunerado'])
-    desconto_inss = float(input(f"Digite o novo desconto INSS (atual: {funcionario_atual['desconto_inss']}): ") or funcionario_atual['desconto_inss'])
-    desconto_refeicao = float(input(f"Digite o novo desconto de refeição (atual: {funcionario_atual['desconto_refeicao']}): ") or funcionario_atual['desconto_refeicao'])
-    desconto_transporte = float(input(f"Digite o novo desconto de transporte (atual: {funcionario_atual['desconto_transporte']}): ") or funcionario_atual['desconto_transporte'])
-    pagamento_fgts = float(input(f"Digite o novo valor do FGTS (atual: {funcionario_atual['pagamento_fgts']}): ") or funcionario_atual['pagamento_fgts'])
-    valor_decimo_terceiro = float(input(f"Digite o novo valor do 13º salário (atual: {funcionario_atual['valor_decimo_terceiro']}): ") or funcionario_atual['valor_decimo_terceiro'])
-    valor_ferias = float(input(f"Digite o novo valor das férias (atual: {funcionario_atual['valor_ferias']}): ") or funcionario_atual['valor_ferias'])
-    valor_um_terco_ferias = float(input(f"Digite o novo valor de 1/3 das férias (atual: {funcionario_atual['valor_um_terco_ferias']}): ") or funcionario_atual['valor_um_terco_ferias'])
-    
-    # Atualizar os dados do funcionário
-    funcionarios[nome_funcionario] = {
-        'nome_funcao':nome_funcao,
-        'equioe':equipe,
-        'numero_cpf': numero_cpf,
-        'chave_pix': chave_pix,
-        'valor_hora_base': valor_hora_base,
-        'valor_hora_extra_um': valor_hora_extra_um,
-        'valor_hora_extra_dois': valor_hora_extra_dois,
-        'adicional_noturno': adicional_noturno,
-        'repouso_remunerado': repouso_remunerado,
-        'desconto_inss': desconto_inss,
-        'desconto_refeicao': desconto_refeicao,
-        'desconto_transporte': desconto_transporte,
-        'pagamento_fgts': pagamento_fgts,
-        'valor_decimo_terceiro': valor_decimo_terceiro,
-        'valor_ferias': valor_ferias,
-        'valor_um_terco_ferias': valor_um_terco_ferias
-    }
-    
-    # Salvar as alterações
-    CriarFuncionario.salvar_funcionarios(funcionarios)
-    print(f"Funcionário {nome_funcionario} atualizado com sucesso.")
+    @staticmethod
+    def editar_funcionario(nome_funcionario, novos_dados):
+        """Edita um funcionário no banco de dados MongoDB."""
+        funcionario = colecao.find_one({"name": nome_funcionario})
+        if funcionario:
+            # Atualiza os dados do funcionário
+            colecao.update_one({"name": nome_funcionario}, {"$set": novos_dados})
+            print(f"Funcionário {nome_funcionario} atualizado com sucesso!")
+        else:
+            print(f"Funcionário {nome_funcionario} não encontrado.")
 
+    @staticmethod
+    def excluir_funcionario(nome_funcionario):
+        """Exclui um funcionário do MongoDB."""
+        colecao.delete_one({"name": nome_funcionario})
+        print(f"Funcionário {nome_funcionario} excluído com sucesso.")
 
 def main():
-    CriarFuncionario.funcionario_dict = CriarFuncionario.carregar_funcionario()
+    CriarFuncionario.funcionario_dict = CriarFuncionario.carregar_funcionarios()
     print(f"Cargos carregados: {CriarFuncionario.funcionario_dict}")
     
     while True:
         print("\nMenu:")
         print("1. Criar Cargo")
         print("2. Editar Cargo")
-        print("3. Sair")
+        print("3. Excluir Cargo")
+        print("4. Sair")
         
         escolha = input("Escolha uma opção: ")
         if escolha == '1':
-            data = {}
-            data['name'] = input("Nome do cargo: ")
-            data['valor_hora_base'] = input("Valor da hora base: ")
-            data['valor_hora_extra_um'] = input("Valor da hora extra 50%: ")
-            data['valor_hora_extra_dois'] = input("Valor da hora extra 100%: ")
-            data['adicional_noturno'] = input("Adicional noturno: ")
-            data['repouso_remunerado'] = input("Repouso remunerado: ")
-            data['valor_ferias'] = input("Valor de férias: ")
-            data['valor_antecipa_ferias'] = input("Valor de antecipação de férias: ")
-            data['valor_decimo_terceiro'] = input("Valor do décimo terceiro: ")
-            data['valor_antecipa_salario'] = input("Valor de antecipação salarial: ")
-            data['pagamento_fgts'] = input("Pagamento de FGTS: ")
-            data['desconto_inss'] = input("Desconto de INSS: ")
-            data['desconto_refeicao'] = input("Desconto de refeição: ")
-            data['desconto_transporte'] = input("Desconto de transporte: ")
-            
+            data = {
+                'name': input("Nome do cargo: "),
+                'valor_hora_base': input("Valor da hora base: "),
+                'valor_hora_extra_um': input("Valor da hora extra 50%: "),
+                'valor_hora_extra_dois': input("Valor da hora extra 100%: "),
+                'adicional_noturno': input("Adicional noturno: "),
+                'repouso_remunerado': input("Repouso remunerado: "),
+                'valor_ferias': input("Valor de férias: "),
+                'valor_antecipa_ferias': input("Valor de antecipação de férias: "),
+                'valor_decimo_terceiro': input("Valor do décimo terceiro: "),
+                'valor_antecipa_salario': input("Valor de antecipação salarial: "),
+                'pagamento_fgts': input("Pagamento de FGTS: "),
+                'desconto_inss': input("Desconto de INSS: "),
+                'desconto_refeicao': input("Desconto de refeição: "),
+                'desconto_transporte': input("Desconto de transporte: ")
+            }
             CriarFuncionario.criar_funcionario(data)
         elif escolha == '2':
-            editar_funcionario()
+            nome_funcionario = input("Digite o nome do funcionário a ser editado: ")
+            novos_dados = {
+                "nome_funcao": input(f"Nova função: "),
+                "equipe": input(f"Nova equipe: "),
+                "numero_cpf": input(f"Novo CPF: "),
+                # Adicionar mais campos aqui conforme necessário
+            }
+            CriarFuncionario.editar_funcionario(nome_funcionario, novos_dados)
         elif escolha == '3':
+            nome_funcionario = input("Digite o nome do funcionário a ser excluído: ")
+            CriarFuncionario.excluir_funcionario(nome_funcionario)
+        elif escolha == '4':
             break
         else:
             print("Opção inválida. Tente novamente.")
-
-
-
-
 
 if __name__ == "__main__":
     main()

@@ -1,21 +1,20 @@
 from pymongo import MongoClient
-from dotenv import load_dotenv
-import os
 import json
+import os
+import uuid
 
 # URI de conexão com MongoDB Atlas
-# Carregar as variáveis de ambiente do arquivo .env
-load_dotenv()
 
-
-uri=os.getenv("MONGO_URI")
+#uri = os.getenv("MONGO_URI")  # Usando variável de ambiente para maior segurança
+uri="mongodb+srv://feliperennann:3IgurVTZKIQOKqxR@cluster0.thye1.mongodb.net/funcionario?retryWrites=true&w=majority"
+# Conectar ao MongoDB
 client = MongoClient(uri)
 
 # Selecionar o banco de dados
-db = client['FUNCIONARIOS_VR3_PPAGAMENTOS']  # 'meu_banco' pode ser o nome do banco de dados que você deseja usar
+db = client['FUNCIONARIOS_VR3_PAGAMENTOS']  # Substitua pelo nome do seu banco de dados real
 
 # Selecionar a coleção (tabela) onde os dados serão armazenados
-colecao = db['funcionarios']  # 'funcionarios' é o nome da coleção
+colecao = db['funcionario']  # Nome da coleção
 
 # Abrir o arquivo JSON
 with open('funcionario.json', 'r', encoding='utf-8') as file:
@@ -23,10 +22,14 @@ with open('funcionario.json', 'r', encoding='utf-8') as file:
 
 # Migrar os dados para o MongoDB
 for chave, dados in dados_funcionarios.items():
-    dados['_id'] = chave  # Usar o UUID como o ID único do MongoDB
-    colecao.insert_one(dados)  # Inserir o documento na coleção
+    dados['_id'] = str(uuid.uuid4())  # Gerar um UUID único como ID
+    colecao.update_one(
+        {'_id': dados['_id']},  # Condição para verificar se o registro já existe
+        {'$set': dados},  # Atualizar os dados
+        upsert=True  # Insere o documento se ele ainda não existir
+    )
 
-# Verificar se os dados foram inseridos
-print("Funcionários inseridos no banco de dados:")
+# Verificar se os dados foram inseridos/atualizados
+print("Funcionários inseridos/atualizados no banco de dados:")
 for funcionario in colecao.find():
     print(funcionario)
