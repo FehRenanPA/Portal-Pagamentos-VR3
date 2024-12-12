@@ -5,7 +5,7 @@ from gerador_olerite import Gerar_olerite
 from criar_cargo import CriarFuncionario
 import firebase_admin
 from firebase_admin import storage, credentials, firestore
-from firebase_storage import initialize_firebase, get_firestore_client, upload_file_to_storage 
+from firebase_storage import initialize_firebase, get_firestore_client, upload_file_to_storage
 from bson.objectid import ObjectId
 from pymongo import MongoClient
 import json
@@ -30,7 +30,11 @@ from bson import ObjectId
 from pymongo.errors import PyMongoError
 from gerar_relatorio import GerarExcel
 import traceback
+from firebase_admin import initialize_app
+import firebase_functions as functions
 
+# Carregar variáveis de ambiente do arquivo .env
+load_dotenv()
 
 logging.basicConfig(
     level=logging.DEBUG,  # Nível de log (DEBUG, INFO, WARNING, ERROR, CRITICAL)
@@ -38,26 +42,33 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Inicializa o Firebase, se não estiver inicializado
+def initialize_firebase():
+    if not firebase_admin._apps:
+        cred_path = os.path.join(os.getcwd(), "serviceAccountKey.json")
+        cred = credentials.Certificate(cred_path)
+        firebase_admin.initialize_app(cred)
+        print("Firebase inicializado com sucesso.")
 
 app = Flask(__name__)
 
+# Inicializar o Firebase Admin
+cred = credentials.Certificate('C:/Users/felipe.rsantos/Downloads/Projeto Recibos/PORTAL DE PAGAMENTOS CONSTRUMAQ/functions/Backend/serviceAccountKey.json')
+firebase_admin.initialize_app(cred)
 
-initialize_firebase()
-
-
-##--------- Firebase
-
+# Habilitar CORS
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
+# Acessar a configuração do Mongo URI usando as variáveis de ambiente
+MONGO_URI = os.getenv('MONGO_URI')  # A URI do MongoDB definida no .env ou Firebase Functions
 
-logging.basicConfig(level=logging.DEBUG,  # Exibe logs de nível DEBUG e superiores
-                    format='%(asctime)s - %(levelname)s - %(message)s')
+# Se não houver URI, gerar erro
+if not MONGO_URI:
+    logger.error("A configuração MONGO_URI não foi definida no Firebase Functions ou no arquivo .env!")
+    raise ValueError("A configuração MONGO_URI não foi definida!")
 
-#------> Acessar o Mongo <--------#
-load_dotenv()
-
-uri = os.getenv("MONGO_URI")
-client = MongoClient(uri)
+# Conectar ao MongoDB usando a URI do Firebase
+client = MongoClient(MONGO_URI)
 db = client['FUNCIONARIOS_VR3_PAGAMENTOS']
 colecao = db['funcionario']
         
@@ -613,8 +624,12 @@ def list_routes():
     #app.run(host='0.0.0.0', port=port)
     #run_simple('127.0.0.1', 5000, app, use_reloader=True)
     
-if __name__ == "__main__":
+#if __name__ == "__main__":
     # Inicializa o Firebase
-    initialize_firebase()
+   # initialize_firebase()
     # Inicia o servidor Flask
-    app.run(debug=True, port=5000)
+    #app.run(debug=True, port=5000)
+    
+if __name__ == "__main__":
+    initialize_firebase()
+    functions.https.on_request(app)     
