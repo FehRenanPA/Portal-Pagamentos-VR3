@@ -1,12 +1,13 @@
 import os
+from flask import Flask, jsonify
 import firebase_admin
-from firebase_admin import credentials, storage, firestore
+from firebase_admin import credentials, firestore, storage
+import firebase_functions as functions
 
 # Inicializa o Firebase, mas só se não estiver inicializado
 def initialize_firebase():
     try:
         if not firebase_admin._apps:
-            # Usando caminho relativo para o arquivo de credenciais
             cred_path = os.path.join(os.getcwd(), "Backend", "serviceAccountKey.json")
             cred = credentials.Certificate(cred_path)
             firebase_admin.initialize_app(cred, {
@@ -35,7 +36,6 @@ def upload_file_to_storage(local_file_path, storage_file_name):
 # Função para obter o cliente do Firestore
 def get_firestore_client():
     try:
-        # A conexão com o Firestore será estabelecida após a inicialização do Firebase
         db = firestore.client()
         print("Conexão com Firestore bem-sucedida.")
         return db
@@ -52,3 +52,29 @@ def add_to_firestore(collection_name, document_id, data):
     else:
         print("Erro: não foi possível conectar ao Firestore.")
 
+# Funções Flask
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Home Page"
+
+@app.route('/about')
+def about():
+    return "About Page"
+
+@app.route('/add_data', methods=['POST'])
+def add_data():
+    data = request.get_json()  # Supondo que você envie dados no corpo da requisição
+    collection_name = "my_collection"
+    document_id = "my_document_id"
+    add_to_firestore(collection_name, document_id, data)
+    return jsonify({"message": "Dados adicionados com sucesso!"})
+
+# Função principal para inicializar o Firebase e Firebase Functions
+def main():
+    initialize_firebase()  # Inicializa o Firebase
+    functions.https.on_request(app)  # Vincula o Flask ao Firebase Functions
+
+if __name__ == "__main__":
+    main()
