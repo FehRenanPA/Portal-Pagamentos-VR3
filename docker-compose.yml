@@ -1,0 +1,13 @@
+version: '3'
+services:
+  firebase-functions:
+    build: .
+    ports:
+      - "5001:5001"  # Porta onde o emulador de funções estará rodando
+      - "4000:4000"  # Porta para a UI do emulador do Firebase
+      - "5000:5000"  # Porta para o Flask (se necessário)
+    volumes:
+      - .:/app  # Para vincular os arquivos locais ao container
+    environment:
+      - NODE_ENV=development
+    command: ["firebase", "emulators:start", "--only", "functions"]

@@ -1,25 +1,23 @@
-# Usando uma imagem base do Python
-FROM python:3.9-slim
+# Usando uma imagem mais enxuta do Python como base para o app
+FROM python:3.10-slim
 
-# Diretório de trabalho dentro do container
-WORKDIR /app
+# Atualizando e instalando dependências adicionais necessárias para compilação
+RUN apt-get update && apt-get install -y gcc libffi-dev
 
-# Copiar o requirements.txt para dentro do container
+# Definindo o diretório de trabalho dentro do contêiner
+WORKDIR /functions/Backend
+
+# Copiando o arquivo requirements.txt para o diretório de trabalho
 COPY requirements.txt .
 
-# Instalar as dependências
+# Instalando as dependências Python listadas no requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copiar todos os arquivos da aplicação para o container
-COPY . .
+# Copiando o conteúdo da pasta Backend (onde está o app.py) para o diretório de trabalho
+COPY Backend/ /functions/Backend/
 
-# Definir a variável de ambiente para o Flask
-ENV FLASK_APP=app.py
-ENV FLASK_RUN_HOST=0.0.0.0
-ENV FLASK_RUN_PORT=8080
+# Expondo a porta em que o Flask ou o servidor estará ouvindo
+EXPOSE 5000
 
-# Expôr a porta 8080 (port padrão do Flask no Docker)
-EXPOSE 8080
-
-# Comando para rodar a aplicação Flask
-CMD ["flask", "run"]
+# Comando para iniciar o app
+CMD ["python", "/functions/Backend/app.py"]

@@ -1,12 +1,10 @@
 {
-  "functions": [
-    {
-      "runtime": "nodejs22",
-      "source": "functions",
-      "predeploy": ["echo 'No predeploy command needed'"],
-      "codebase": "default"
-    }
-  ],
+  "functions": {
+    "runtime": "nodejs20",
+    "source": "functions/Backend",
+    "predeploy": ["echo 'No predeploy command needed'"],
+    "codebase": "default"
+  },
   "hosting": {
     "public": "public",
     "ignore": [
@@ -16,8 +14,8 @@
     ],
     "rewrites": [
       {
-        "source": "/**",
-        "function": "app"
+        "source": "/api/**",
+        "function": "api"
       }
     ]
   },
@@ -30,6 +28,10 @@
     },
     "hosting": {
       "port": 5000
+    },
+    "firestore": {
+      "host": "127.0.0.1",
+      "port": 8090
     },
     "storage": {
       "port": 9199

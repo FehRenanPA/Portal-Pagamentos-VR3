@@ -49,13 +49,18 @@ app = Flask(__name__)
 # Habilitar CORS
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-# Inicializar Firebase Admin
-cred_path = os.getenv('FIREBASE_CREDENTIALS_PATH', '.functions/Backend/serviceAccountKey.json')
-if not os.path.exists(cred_path):
-    logger.error(f"Arquivo de credenciais Firebase não encontrado: {cred_path}")
-    raise FileNotFoundError(f"Credenciais do Firebase não foram encontradas no caminho: {cred_path}")
 
-cred = credentials.Certificate(cred_path)
+# Obter o caminho das credenciais do Firebase a partir do arquivo .env
+FIREBASE_CREDENTIALS_PATH = os.getenv("FIREBASE_CREDENTIALS_PATH")
+if not FIREBASE_CREDENTIALS_PATH:
+    raise ValueError("Caminho para as credenciais do Firebase não foi definido no .env")
+
+# Verificar se o arquivo de credenciais existe
+if not os.path.exists(FIREBASE_CREDENTIALS_PATH):
+    raise FileNotFoundError(f"Credenciais do Firebase não foram encontradas no caminho: {FIREBASE_CREDENTIALS_PATH}")
+
+# Inicializar o Firebase Admin
+cred = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
 initialize_app(cred)
 
 # Configuração do MongoDB
@@ -615,10 +620,10 @@ def list_routes():
 
 
 #----- Teste Locais -----#
-#if __name__ == "__main__":
-    #port = int(os.environ.get("PORT", 5000))
-    #app.run(host='0.0.0.0', port=port)
-    #run_simple('127.0.0.1', 5000, app, use_reloader=True)
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
+    run_simple('127.0.0.1', 5000, app, use_reloader=True)
     
 #if __name__ == "__main__":
     # Inicializa o Firebase
@@ -626,9 +631,9 @@ def list_routes():
     # Inicia o servidor Flask
     #app.run(debug=True, port=5000)
     
-if __name__ == "__main__":
-   initialize_firebase()
-   functions.https.on_request(app)     
+#if __name__ == "__main__":
+   #initialize_firebase()
+  # functions.https.on_request(app)     
    
 #if __name__ == '__main__':
  #   app.run(debug=True, host='0.0.0.0')   

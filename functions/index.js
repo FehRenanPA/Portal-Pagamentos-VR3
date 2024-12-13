@@ -2,21 +2,30 @@ const functions = require("firebase-functions");
 const { exec } = require("child_process");
 const path = require("path");
 
-const backendDir = path.join(__dirname, "functions", "Backend");
+// Caminho absoluto para o diretório Backend
+const backendDir = path.join(__dirname, "Backend");
 
-exports.api = functions
-  .https
-  .onRequest((req, res) => {
-    console.log("Chamando a aplicação Flask...");
+// Função HTTP do Firebase que inicia o Flask (Python)
+exports.api = functions.https.onRequest((req, res) => {
+    console.log("Iniciando execução da aplicação Flask...");
     console.log(`Caminho do Backend: ${backendDir}`);
 
-    exec("python app.py", { cwd: backendDir }, (error, stdout, stderr) => {
+    // Comando para rodar o Flask
+    const command = process.platform === "win32" ? "python app.py" : "python3 app.py";
+
+    // Execução do comando no diretório especificado
+    exec(command, { cwd: backendDir }, (error, stdout, stderr) => {
         if (error) {
-            console.error(`Erro ao executar Flask: ${stderr}`);
+            // Log detalhado do erro
+            console.error("Erro completo:", error);
+            console.error(`stderr: ${stderr}`);
+            console.error(`stdout antes do erro: ${stdout}`);
             return res.status(500).send(`Erro ao rodar o Flask: ${stderr}`);
         }
 
+        // Caso a execução seja bem-sucedida
+        console.log("Flask executado com sucesso!");
         console.log(`Resposta do Flask: ${stdout}`);
-        res.send(stdout);  // Enviar a resposta do Flask para o cliente
+        res.send(stdout); // Retorna a resposta do Flask para o cliente
     });
 });
