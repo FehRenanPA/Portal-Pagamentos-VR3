@@ -2,12 +2,26 @@ version: '3'
 services:
   firebase-functions:
     build: .
+    container_name: firebase_emulator
     ports:
-      - "5001:5001"  # Porta onde o emulador de funções estará rodando
+      - "5001:5001"  # Porta para o emulador de funções
       - "4000:4000"  # Porta para a UI do emulador do Firebase
-      - "5000:5000"  # Porta para o Flask (se necessário)
+      - "8080:8080"  # Porta para Firestore
+      - "9099:9099"  # Porta para Authentication
+      - "9000:9000"  # Porta para Storage
     volumes:
-      - .:/app  # Para vincular os arquivos locais ao container
+      - .:/app  # Vincula os arquivos locais ao container
     environment:
       - NODE_ENV=development
-    command: ["firebase", "emulators:start", "--only", "functions"]
+    command: ["firebase", "emulators:start", "--only", "functions,firestore,auth,storage"]
+
+  # Opcional: Adicionar um serviço para Flask, se necessário
+  flask:
+    image: python:3.12
+    container_name: flask_app
+    working_dir: /app
+    volumes:
+      - .:/app
+    ports:
+      - "5000:5000"
+    command: ["python", "app.py"]

@@ -1,10 +1,47 @@
 {
-  "functions": {
-    "runtime": "nodejs20",
-    "source": "functions/Backend",
-    "predeploy": ["echo 'No predeploy command needed'"],
-    "codebase": "default"
-  },
+  "functions": [
+    {
+      "runtime": "nodejs22",
+      "source": "functions/Backend",
+      "predeploy": [
+        "echo 'No predeploy command needed'"
+      ],
+      "codebase": "default"
+    },
+    {
+      "source": "portal_vr3",
+      "codebase": "portal_vr3",
+      "ignore": [
+        "venv",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ]
+    },
+    {
+      "source": "portal_pagamentos_vr3",
+      "codebase": "portal_pagamentos_vr3",
+      "ignore": [
+        "venv",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ]
+    },
+    {
+      "source": "portal_vr3_2",
+      "codebase": "portal_vr3_2",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ]
+    }
+  ],
   "hosting": {
     "public": "public",
     "ignore": [

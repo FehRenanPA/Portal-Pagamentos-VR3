@@ -1,11 +1,10 @@
-from flask import Flask, request, jsonify, render_template, send_file, abort,Response
+from flask import Flask, request, jsonify, render_template, send_file, abort, Response
 from datetime import datetime
 from gerar_sub_total_um import Sub_total_um
 from gerador_olerite import Gerar_olerite
 from criar_cargo import CriarFuncionario
 import firebase_admin
-from firebase_admin import storage, credentials, firestore
-from firebase_storage import initialize_firebase, get_firestore_client, upload_file_to_storage
+from firebase_admin import storage, credentials, firestore, auth
 from bson.objectid import ObjectId
 from pymongo import MongoClient
 import json
@@ -30,8 +29,9 @@ from bson import ObjectId
 from pymongo.errors import PyMongoError
 from gerar_relatorio import GerarExcel
 import traceback
-from firebase_admin import initialize_app
-import firebase_functions as functions
+import pyrebase
+from firebase_auth import gerar_id_token 
+import requests
 
 # Carregar variáveis de ambiente do arquivo .env
 load_dotenv()
@@ -42,36 +42,118 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Inicializa o Firebase, se não estiver inicializado
-def initialize_firebase():
-    if not firebase_admin._apps:
-        cred_path = os.path.join(os.getcwd(), "serviceAccountKey.json")
-        cred = credentials.Certificate(cred_path)
-        firebase_admin.initialize_app(cred)
-        print("Firebase inicializado com sucesso.")
-
-app = Flask(__name__)
-
 # Inicializar o Firebase Admin
-cred = credentials.Certificate('C:/Users/felipe.rsantos/Downloads/Projeto Recibos/PORTAL DE PAGAMENTOS CONSTRUMAQ/functions/Backend/serviceAccountKey.json')
+cred_path = os.getenv("FIREBASE_CREDENTIALS_PATH")
+print(f"Caminho das credenciais: {cred_path}")
+
+if not cred_path or not os.path.exists(cred_path):
+    logger.error("Arquivo de credenciais do Firebase não encontrado! Verifique a configuração.")
+    raise FileNotFoundError("Arquivo de credenciais do Firebase não encontrado!")
+
+cred = credentials.Certificate(cred_path) 
+print(f"Service Account Email: {cred.service_account_email}")  
 firebase_admin.initialize_app(cred)
+firestore_client = firestore.client()  # Inicializa o Firestore
+print(f"Service Account Email: {cred.service_account_email}")
+app = Flask(__name__)
 
 # Habilitar CORS
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-# Acessar a configuração do Mongo URI usando as variáveis de ambiente
-MONGO_URI = os.getenv('MONGO_URI')  # A URI do MongoDB definida no .env ou Firebase Functions
 
-# Se não houver URI, gerar erro
+MONGO_URI = os.getenv('MONGO_URI') 
+
+
 if not MONGO_URI:
     logger.error("A configuração MONGO_URI não foi definida no Firebase Functions ou no arquivo .env!")
     raise ValueError("A configuração MONGO_URI não foi definida!")
 
-# Conectar ao MongoDB usando a URI do Firebase
 client = MongoClient(MONGO_URI)
 db = client['FUNCIONARIOS_VR3_PAGAMENTOS']
 colecao = db['funcionario']
-        
+
+
+def gerar_custom_token(uid):
+    try:
+        if not uid:
+            logger.error("UID está vazio!")
+            return None
+        logger.info(f"Gerando custom token para o UID: {uid}")
+        custom_token_str = auth.create_custom_token(uid)
+
+        # Converter o token gerado de bytes para string
+        custom_token= custom_token_str.decode('utf-8')
+
+        logger.info(f"Custom token gerado com sucesso para o UID: {uid}")
+        return custom_token # Retorne o token como string
+    except Exception as e:
+        logger.error(f"Erro ao gerar o custom token: {e}")
+        return None
+
+
+def get_id_token(custom_token):
+    try:
+        # O custom_token é verificado e o ID Token é extraído
+        decoded_token = auth.verify_id_token(custom_token)
+        return decoded_token['uid']  # Retorna o UID (ou o id_token se for necessário para autenticação)
+    except Exception as e:
+        logger.error(f"Erro ao verificar o custom_token: {e}")
+        return None
+   
+@app.route('/api/generate-custom-token', methods=['POST'])
+def generate_custom_token():
+    data = request.get_json()  # Obtém os dados JSON enviados
+    logger.debug(f"Dados recebidos: {data}")  # Adicione um log para debugar
+    uid = data.get('uid')  # Tenta pegar o 'uid' do corpo da requisição
+    if not uid:
+        logger.error("UID não fornecido no corpo da requisição")
+        return jsonify({"error": "UID não fornecido"}), 400  # Retorna erro se não encontrar o UID
+    
+    try:
+        custom_token = gerar_custom_token(uid)  # Passa o 'uid' para a função
+        if custom_token:
+            return jsonify({"custom_token": custom_token}), 200
+        else:
+            return jsonify({"error": "Erro ao gerar custom token"}), 500
+    except Exception as e:
+        logger.error(f"Erro ao gerar custom token: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+# Rota para obter dados do Firestore usando o ID Token
+@app.route('/api/firestore/get-data', methods=['POST'])
+def get_data():
+    try:
+        data = request.get_json()
+        id_token = data.get('id_token')
+
+        # Verifique se o ID Token foi enviado
+        if not id_token:
+            return jsonify({"error": "ID Token não fornecido"}), 400
+
+        # Valide o ID Token
+        decoded_token = auth.verify_id_token(id_token)
+        uid = decoded_token.get('uid')
+
+        return jsonify({"message": "Token válido", "uid": uid}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 401
+
+# Rota para gerar e retornar o ID Token
+@app.route('/api/auth/get-id-token', methods=['POST'])
+def generate_id_token():
+    try:
+        # Chama a função gerar_id_token
+        id_token = gerar_id_token()
+
+        if not id_token:
+            return jsonify({"error": "Falha ao gerar o ID Token"}), 500
+
+        return jsonify({"id_token": id_token, "message": "ID Token gerado com sucesso"}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/api/funcionarios', methods=['GET'])
 def get_all_funcionarios():
     """Retorna todos os funcionários do MongoDB."""
@@ -618,18 +700,9 @@ def list_routes():
 
 
 
-#----- Teste Locais -----#
-#if __name__ == "__main__":
-    #port = int(os.environ.get("PORT", 5000))
-    #app.run(host='0.0.0.0', port=port)
-    #run_simple('127.0.0.1', 5000, app, use_reloader=True)
-    
-#if __name__ == "__main__":
-    # Inicializa o Firebase
-   # initialize_firebase()
-    # Inicia o servidor Flask
-    #app.run(debug=True, port=5000)
-    
-if __name__ == "__main__":
-    initialize_firebase()
-    functions.https.on_request(app)     
+#f __name__ == "__main__":                       
+ #  app.run(debug=True, port=5000)
+if __name__ == '__main__':
+    app.run(debug=True)
+
+   
