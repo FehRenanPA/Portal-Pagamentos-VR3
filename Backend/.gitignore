@@ -27,4 +27,4 @@ yarn-error.log*
 *.cfg
 venv/
 serviceAccountKey.json
-
+firebase_credentials.json   
