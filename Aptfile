@@ -5,3 +5,5 @@ liblcms2-dev
 libwebp-dev
 tcl-dev
 tk-dev
+libopenjp2-7-dev
+libxcb1-dev
