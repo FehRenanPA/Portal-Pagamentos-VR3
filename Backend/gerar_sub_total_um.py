@@ -3,7 +3,6 @@ import logging
 
 
 
-
 funcionario_dict = CriarFuncionario.carregar_funcionarios()
 
 
