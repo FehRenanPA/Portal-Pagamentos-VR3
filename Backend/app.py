@@ -1,7 +1,5 @@
 from flask import Flask, request, jsonify, render_template, send_file, abort, Response
 from datetime import datetime
-import sys
-sys.path.append('PORTAL DE PAGAMENTOS CONSTRUMAQ/Backend')
 from gerar_sub_total_um import Sub_total_um
 from gerador_olerite import Gerar_olerite
 from criar_cargo import CriarFuncionario
