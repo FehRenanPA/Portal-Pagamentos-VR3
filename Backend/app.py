@@ -686,7 +686,7 @@ def add_to_firestore(collection_name, document_id, data):
 # --- Outras rotas simples ---
 @app.route('/')
 def home():
-    return "Home Page"
+    return "Aplicação funcionando no Heroku!"
 
 @app.route('/about')
 def about():

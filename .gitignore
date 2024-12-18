@@ -26,5 +26,6 @@ yarn-error.log*
 *.env
 *.cfg
 venv/
-serviceAccountKey.json
+Backend/serviceAccountKey.json
+Backend/firebase_credentials.json   
 
