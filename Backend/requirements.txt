@@ -65,6 +65,7 @@ Werkzeug==3.0.1
 wheel==0.41.2
 wrapt==1.16.0
 wsproto==1.2.0
-distutils
+Pillow==9.0.0
+
 
 
