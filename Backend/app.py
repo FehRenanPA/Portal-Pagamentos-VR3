@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, render_template, send_file, abort, Response
 from datetime import datetime
-from gerar_sub_total_um import Sub_total_um
+from Backend.gerar_sub_total_um import Sub_total_um
 from gerador_olerite import Gerar_olerite
 from criar_cargo import CriarFuncionario
 import firebase_admin
