@@ -1,2 +1,2 @@
-web: gunicorn portal:app
+web: gunicorn app:app
 
