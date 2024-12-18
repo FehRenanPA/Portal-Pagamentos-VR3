@@ -7,3 +7,5 @@ tcl-dev
 tk-dev
 libopenjp2-7-dev
 libxcb1-dev
+libpq-dev
+
