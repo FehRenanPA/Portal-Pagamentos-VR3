@@ -66,4 +66,3 @@ wheel==0.41.2
 wrapt==1.16.0
 wsproto==1.2.0
 Pillow==9.0.0
-gunicorn
