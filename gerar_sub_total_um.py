@@ -1,4 +1,4 @@
-from Backend.criar_cargo import CriarFuncionario
+from criar_cargo import CriarFuncionario
 import logging
 
 
