@@ -1,8 +1,8 @@
 from flask import Flask, request, jsonify, render_template, send_file, abort, Response
 from datetime import datetime
-from Backend.criar_cargo import CriarFuncionario
-from Backend.gerar_sub_total_um import Sub_total_um
-from Backend.gerador_olerite import Gerar_olerite
+from criar_cargo import CriarFuncionario
+from gerar_sub_total_um import Sub_total_um
+from gerador_olerite import Gerar_olerite
 import firebase_admin
 from firebase_admin import storage, credentials, firestore, auth
 from bson.objectid import ObjectId
@@ -22,15 +22,15 @@ import threading
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
-from Backend.salvar_dados_mongo import MongoDBHandler
+from salvar_dados_mongo import MongoDBHandler
 from dotenv import load_dotenv
 from datetime import datetime
 from bson import ObjectId
 from pymongo.errors import PyMongoError
-from Backend.gerar_relatorio import GerarExcel
+from gerar_relatorio import GerarExcel
 import traceback
 import pyrebase
-from Backend.firebase_auth import gerar_id_token 
+from firebase_auth import gerar_id_token 
 import requests
 
 # Carregar variáveis de ambiente do arquivo .env
