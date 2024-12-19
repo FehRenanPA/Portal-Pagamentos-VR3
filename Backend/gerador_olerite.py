@@ -3,7 +3,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 from reportlab.lib.units import mm
 from io import BytesIO
-from gerar_sub_total_um import Sub_total_um
+from Backend.gerar_sub_total_um import Sub_total_um
 from openpyxl import Workbook
 from openpyxl import Workbook, load_workbook
 import os
