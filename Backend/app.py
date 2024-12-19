@@ -22,7 +22,7 @@ import threading
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
-from salvar_dados_mongo import MongoDBHandler
+from Backend.salvar_dados_mongo import MongoDBHandler
 from dotenv import load_dotenv
 from datetime import datetime
 from bson import ObjectId
