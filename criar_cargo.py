@@ -1,7 +1,7 @@
 import json
 import os
 from pymongo import MongoClient
-from cargo import Funcionario
+from Backend.cargo import Funcionario
 from dotenv import load_dotenv
 
 load_dotenv()

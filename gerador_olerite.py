@@ -3,7 +3,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 from reportlab.lib.units import mm
 from io import BytesIO
-from gerar_sub_total_um import Sub_total_um
+from Backend.gerar_sub_total_um import Sub_total_um
 from openpyxl import Workbook
 from openpyxl import Workbook, load_workbook
 import os
@@ -11,7 +11,7 @@ from openpyxl.styles import Alignment, Font
 from openpyxl.utils import get_column_letter
 from pymongo import MongoClient
 from bson import ObjectId
-from salvar_dados_mongo import MongoDBHandler  # Importe a classe MongoDBHandler
+from Backend.salvar_dados_mongo import MongoDBHandler  # Importe a classe MongoDBHandler
 import logging
 
 
