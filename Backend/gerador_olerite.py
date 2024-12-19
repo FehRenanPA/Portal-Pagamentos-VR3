@@ -11,7 +11,7 @@ from openpyxl.styles import Alignment, Font
 from openpyxl.utils import get_column_letter
 from pymongo import MongoClient
 from bson import ObjectId
-from salvar_dados_mongo import MongoDBHandler  # Importe a classe MongoDBHandler
+from Backend.salvar_dados_mongo import MongoDBHandler  # Importe a classe MongoDBHandler
 import logging
 
 
