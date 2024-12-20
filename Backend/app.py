@@ -43,7 +43,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Inicializar o Firebase Admin
-cred_path = os.getenv("FIREBASE_CREDENTIALS_PATH")
+cred_path = json.loads(os.getenv("FIREBASE_CREDENTIALS_PATH"))
 print(f"Caminho das credenciais: {cred_path}")
 
 if not cred_path or not os.path.exists(cred_path):
