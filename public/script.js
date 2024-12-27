@@ -1,14 +1,6 @@
 
-<<<<<<< HEAD
    
      function showTab(tab) {
-
-=======
-
-   
-    function showTab(tab) {
->>>>>>> 28922aefcf2966260ba3410c7ef92d079acbdbba
-        
         const tabs = document.querySelectorAll('.tab');
         tabs.forEach(t => {
             t.classList.remove('active');
