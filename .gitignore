@@ -28,4 +28,3 @@ yarn-error.log*
 venv/
 Backend/serviceAccountKey.json
 Backend/firebase_credentials.json   
-public/firebase-config.js
