@@ -15,7 +15,7 @@ const recibo = document.getElementById('recibo');
 const funcionarios = document.getElementById('funcionarios');
 
 // Controle de redirecionamento
-let hasCheckedAuth = false;
+//let hasCheckedAuth = false;
 
 // Função para exibir a seção de login
 export function showLoginSection() {
@@ -57,52 +57,54 @@ export function showTab(tabName) {
 
 // Verifica o estado de autenticação
 onAuthStateChanged(auth, (user) => {
-    if (!hasCheckedAuth) {
-        hasCheckedAuth = true;
-        const currentPath = window.location.pathname;
+    const currentPath = window.location.pathname;
 
-        if (!user) {
-            // Redireciona para login se não autenticado
-            if (!currentPath.endsWith("login.html")) {
-                window.location.href = "login.html";
-            }
+    if (!user) {
+        // Se não autenticado, redireciona para a tela de login
+        if (!currentPath.endsWith("login.html")) {
+            window.location.href = "login.html";
+        }
+    } else {
+        // Se autenticado, redireciona para o dashboard
+        if (currentPath.endsWith("login.html")) {
+            // Redireciona para index.html
+            window.location.href = "index.html";
         } else {
-            // Redireciona para o dashboard se autenticado
-            if (currentPath.endsWith("login.html")) {
-                window.location.href = "index.html";
-            } else {
-                showLogoutSection(user.email);
-            }
+            // Exibe a interface de logout no dashboard
+            showLogoutSection(user.email);
         }
     }
 });
 
-// Login
+
 if (loginButton) {
-    loginButton.addEventListener("click", () => {
+    loginButton.addEventListener("click", async () => {
         const email = document.getElementById("email").value.trim();
         const password = document.getElementById("password").value.trim();
+
+        console.log("Tentando login com:", email);
 
         errorMessage.textContent = ""; // Limpa mensagens de erro
 
         if (email && password) {
-            signInWithEmailAndPassword(auth, email, password)
-                .then((userCredential) => {
-                    const user = userCredential.user;
-                    showLogoutSection(user.email);
-                    
-                    setTimeout(() => {
-                        window.location.reload(); // Isso recarrega a página atual
-                    }, 100);
-                    })
-                .catch((error) => {
-                    mostrarErroLogin(error);
-                });
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                console.log("Login bem-sucedido. Redirecionando para index.html.");
+                window.location.href = "index.html";
+            } catch (error) {
+                console.error("Erro durante o login:", error);
+                mostrarErroLogin(error);
+            }
         } else {
+            console.warn("Campos de email ou senha estão vazios.");
             errorMessage.textContent = "Por favor, preencha todos os campos.";
         }
     });
 }
+
+
+
+
 
 // Mostra erros no login
 function mostrarErroLogin(error) {
