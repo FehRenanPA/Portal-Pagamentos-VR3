@@ -1,35 +1,37 @@
 from pymongo import MongoClient
+from bson import ObjectId
 import json
 import os
-import uuid
+from dotenv import load_dotenv
 
-# URI de conexão com MongoDB Atlas
+# Carregar variáveis de ambiente
+load_dotenv()
 
-#uri = os.getenv("MONGO_URI")  # Usando variável de ambiente para maior segurança
-uri="mongodb+srv://feliperennann:3IgurVTZKIQOKqxR@cluster0.thye1.mongodb.net/funcionario?retryWrites=true&w=majority"
 # Conectar ao MongoDB
+uri = os.getenv('MONGO_URI')  # Certifique-se de que o MONGO_URI está configurado corretamente no .env
 client = MongoClient(uri)
 
-# Selecionar o banco de dados
+# Selecionar o banco de dados e a coleção
 db = client['FUNCIONARIOS_VR3_PAGAMENTOS']  # Substitua pelo nome do seu banco de dados real
-
-# Selecionar a coleção (tabela) onde os dados serão armazenados
 colecao = db['funcionario']  # Nome da coleção
 
-# Abrir o arquivo JSON
+# Ler os dados do arquivo JSON
 with open('funcionario.json', 'r', encoding='utf-8') as file:
     dados_funcionarios = json.load(file)  # Carregar os dados do arquivo JSON
 
-# Migrar os dados para o MongoDB
-for chave, dados in dados_funcionarios.items():
-    dados['_id'] = str(uuid.uuid4())  # Gerar um UUID único como ID
+# Processar e migrar os dados
+for uid, dados in dados_funcionarios.items():
+    # Remover o UID como chave e adicionar um _id padrão do MongoDB
+    dados['_id'] = ObjectId()  # Gerar um novo ObjectId
+
+    # Inserir ou atualizar os dados no MongoDB
     colecao.update_one(
-        {'_id': dados['_id']},  # Condição para verificar se o registro já existe
-        {'$set': dados},  # Atualizar os dados
-        upsert=True  # Insere o documento se ele ainda não existir
+        {'_id': dados['_id']},  # Condição para identificar o registro
+        {'$set': dados},  # Dados a serem atualizados/inseridos
+        upsert=True  # Inserir se não existir
     )
 
-# Verificar se os dados foram inseridos/atualizados
-print("Funcionários inseridos/atualizados no banco de dados:")
+# Imprimir os dados migrados
+print("Funcionários transformados e inseridos/atualizados no banco de dados:")
 for funcionario in colecao.find():
     print(funcionario)

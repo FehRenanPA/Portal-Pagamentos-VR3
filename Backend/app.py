@@ -37,18 +37,34 @@ import requests
 load_dotenv()
 
 logging.basicConfig(
-    level=logging.DEBUG,  # Nível de log (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+    level=logging.WARNING,  # Nível de log (DEBUG, INFO, WARNING, ERROR, CRITICAL)
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
 
-# Inicializar o Firebase Admin
-cred_path = os.getenv("FIREBASE_CREDENTIALS_PATH")
-print(f"Caminho das credenciais: {cred_path}")
+# Inicializar o Firebase Admin 
 
-if not cred_path or not os.path.exists(cred_path):
-    logger.error("Arquivo de credenciais do Firebase não encontrado! Verifique a configuração.")
-    raise FileNotFoundError("Arquivo de credenciais do Firebase não encontrado!")
+#cred_path = os.getenv("FIREBASE_CREDENTIALS_PATH")
+#print(f"Caminho das credenciais: {cred_path}")
+
+#if not cred_path or not os.path.exists(cred_path):
+    #logger.error("Arquivo de credenciais do Firebase não encontrado! Verifique a configuração.")
+    #raise FileNotFoundError("Arquivo de credenciais do Firebase não encontrado!")
+    
+cred_path = {
+    "type": "service_account",
+    "project_id": os.getenv('FIREBASE_PROJECT_ID'),
+    "private_key_id": os.getenv('FIREBASE_PRIVATE_KEY_ID'),
+    "private_key": os.getenv('FIREBASE_PRIVATE_KEY').replace('\\n', '\n'),
+    "client_email": os.getenv('FIREBASE_CLIENT_EMAIL'),
+    "client_id": os.getenv('FIREBASE_CLIENT_ID'),
+    "auth_uri": os.getenv('FIREBASE_AUTH_URI'),
+    "token_uri": os.getenv('FIREBASE_TOKEN_URI'),
+    "auth_provider_x509_cert_url": os.getenv('FIREBASE_AUTH_PROVIDER_X509_CERT_URL'),
+    "client_x509_cert_url": os.getenv('FIREBASE_CLIENT_X509_CERT_URL'),
+    "universe_domain": os.getenv('FIREBASE_UNIVERSE_DOMAIN')
+}    
+print(cred_path)
 
 cred = credentials.Certificate(cred_path) 
 print(f"Service Account Email: {cred.service_account_email}")  
@@ -57,7 +73,7 @@ firestore_client = firestore.client()  # Inicializa o Firestore
 print(f"Service Account Email: {cred.service_account_email}")
 app = Flask(__name__)
 
-# Habilitar CORS
+# Habilitarr CORS
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 
@@ -139,7 +155,7 @@ def get_data():
     except Exception as e:
         return jsonify({"error": str(e)}), 401
 
-# Rota para gerar e retornar o ID Token
+# Rota para gerar e retornar o ID Token - teste
 @app.route('/api/auth/get-id-token', methods=['POST'])
 def generate_id_token():
     try:
@@ -203,6 +219,10 @@ class CriarFuncionario:
     def carregar_funcionario_por_id(funcionario_id):
         """Carrega um funcionário específico pelo ID."""
         try:
+            # Verifica se o id é uma string e tenta convertê-lo para ObjectId
+            if isinstance(funcionario_id, str):
+                funcionario_id = ObjectId(funcionario_id)
+
             funcionario = colecao.find_one({"_id": funcionario_id})
             if funcionario:
                 funcionario['_id'] = str(funcionario['_id'])  # Converte o _id para string
@@ -334,7 +354,6 @@ def gerar_relatorio():
         return jsonify({"error": f"Erro ao gerar relatório: {str(e)}"}), 500
 
 ##----------------------------------> Gerar etiquetas <------------------------------------##
-
 @app.route('/api/gerar-etiquetas', methods=['POST'])
 def gerar_etiquetas():
     """Gera etiquetas em PDF para os funcionários."""
@@ -351,13 +370,14 @@ def gerar_etiquetas():
     funcionarios_ordenados = sorted(funcionarios, key=lambda f: f.get("nome_funcionario", ""))
 
     # Configurações para o PDF
-    page_width = 595
+    page_width = 595  # Tamanho A4 em pontos
     page_height = 842
-    etiqueta_largura = page_width / 2 - 30
-    etiqueta_altura = 70
-    margem_superior = page_height - 45
-    margem_lateral = 3.5
-    max_linhas_por_pagina = 11
+    etiqueta_largura = page_width / 2 - 30  # 50% da página com margens laterais
+    etiqueta_altura = 72  # Altura da etiqueta ajustada para incluir 3 linhas e espaçamentos
+    margem_superior = page_height - 35
+    margem_lateral = 28  # Margem inicial padrão (10 mm)
+    deslocamento_coluna = 22  # Deslocamento adicional para a segunda coluna
+    max_linhas_por_pagina = int(page_height / etiqueta_altura)
 
     # Preparação do PDF
     output = BytesIO()
@@ -372,8 +392,7 @@ def gerar_etiquetas():
             continue
 
         nome_funcionario = funcionario.get("nome_funcionario", funcionario.get("numero_cpf", "Nome não disponível"))
-        equipe = funcionario.get("equipe", "Equipe Não Cadastrada")
-        etiqueta_texto = f"{nome_funcionario}\n{nome_funcao}\n{data_inicio} à {data_fim}"
+        etiqueta_texto = f"{nome_funcionario}\n{nome_funcao}\n{data_inicio} Á {data_fim}"
 
         if linha_atual >= max_linhas_por_pagina:
             c.showPage()
@@ -382,12 +401,18 @@ def gerar_etiquetas():
             linha_atual = 0
             col_atual = 0
 
+        # Ajustar posição X
         x_dados = margem_lateral + (col_atual * etiqueta_largura)
+
+        # Aplicar deslocamento apenas para a segunda coluna
+        if col_atual == 1:
+            x_dados += deslocamento_coluna
+
         c.setFont("Helvetica", 10)
-        linha_y = y - 5
+        linha_y = y - 10  # Recuo inicial para alinhar à margem superior da etiqueta
         for linha in etiqueta_texto.split('\n'):
-            c.drawCentredString(x_dados + etiqueta_largura / 2, linha_y, linha)
-            linha_y -= 10
+            c.drawString(x_dados, linha_y, linha)  # Texto alinhado com recuo adicional para a segunda coluna
+            linha_y -= 20  # Espaçamento entre linhas
 
         col_atual = (col_atual + 1) % 2
         if col_atual == 0:
@@ -400,6 +425,7 @@ def gerar_etiquetas():
         'Content-Type': 'application/pdf',
         'Content-Disposition': 'attachment; filename="etiquetas.pdf"'
     }
+
 
 
 
@@ -685,8 +711,9 @@ def add_to_firestore(collection_name, document_id, data):
 
 # --- Outras rotas simples ---
 @app.route('/')
-def home():
-    return "Aplicação funcionando no Heroku!"
+def index():
+    api_url = os.getenv('API_URL')  # Pega a URL da API do arquivo .env
+    return render_template('public/index.html', api_url=api_url)
 
 @app.route('/about')
 def about():
@@ -698,12 +725,11 @@ def list_routes():
     routes = [{"endpoint": rule.endpoint, "rule": rule.rule} for rule in app.url_map.iter_rules()]
     return jsonify(routes)
 
-if __name__ == "__main__":
-    import os
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+#if __name__ == "__main__":
+    #port = int(os.environ.get("PORT", 5000))
+    #app.run(host="0.0.0.0", port=port)
 
 #f __name__ == "__main__":                       
  #  app.run(debug=True, port=5000)
-#if __name__ == '__main__':
-    #app.run(debug=True)
+if __name__ == '__main__':
+    app.run(debug=True)

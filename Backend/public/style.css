@@ -504,7 +504,11 @@ li {
 .form-group input,
 .form-group select {
     width: 100%; /* Faz o input ocupar 100% da largura do grupo */
+<<<<<<< HEAD
     padding: 8px; /* Adiciona padding para um visual melhor */
+=======
+    padding: 5px; /* Adiciona padding para um visual melhor */
+>>>>>>> 28922aefcf2966260ba3410c7ef92d079acbdbba
     border: 3px solid #444; /* Adiciona borda */
     border-radius: 10px; /* Bordas arredondadas */
 }
@@ -557,5 +561,39 @@ iframe {
 }
 
 .close:hover {
+<<<<<<< HEAD
     background-color: #aaa; /* Cor mais escura ao passar o mouse */
 }
+=======
+    background-color: #807e7e; /* Cor mais escura ao passar o mouse */
+}
+/* Garantir que o modal e seus elementos estejam bem posicionados */
+#modal-excel {
+    display: flex;
+    overflow-y: auto;
+    justify-content: center;
+    align-items: center;
+}
+
+.checkbox-wrapper {
+    display: -webkit-inline-box;               /* Exibe os itens na mesma linha */
+    align-items: baseline;         /* Alinha os itens verticalmente ao centro */
+    margin-bottom: 3px;          /* Espaçamento entre os itens */
+     /* Alinha os itens à esquerda */
+}
+
+.checkbox-wrapper input {
+    margin-right: 10px;          /* Espaço entre o checkbox e a label */
+}
+
+.checkbox-wrapper label {
+    margin-left: 5px;            /* Espaço entre o checkbox e a label */
+    margin-right: 15px;          /* Espaço entre as opções */
+}
+/* Ajuste para diminuir o tamanho da fonte das labels */
+.checkbox-wrapper label {
+    font-size: 14px; /* Defina o tamanho que deseja */
+    margin-left: 1px; 
+    margin-right: 500px; 
+}
+>>>>>>> 28922aefcf2966260ba3410c7ef92d079acbdbba

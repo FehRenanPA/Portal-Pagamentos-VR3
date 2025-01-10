@@ -1,8 +1,103 @@
+.baixar-excel-botao:hover {
+    background-color: #B71C1C; /* Vermelho mais escuro no hover */
+}
+
+/* Inputs de Login */
+#login-section input[type="email"], 
+#login-section input[type="password"] {
+    display: block;
+    width: calc(100% - 20px);
+    margin: 10px auto;
+    padding: 8px 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+/* Estilo do componente de login */
+#login-section {
+    width: 100%;
+    max-width: 400px; /* Largura máxima */
+    background-color: #ffffff; /* Fundo branco */
+    border-radius: 8px; /* Bordas arredondadas */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Sombra leve */
+    padding: 20px;
+    margin: 0 0 0 auto; /* Empurra o componente para a direita */
+    position: relative; /* Permite controle adicional do posicionamento */
+    right: -40px; /* Ajuste para afastar do lado direito */
+}
+
+/* Títulos */
+#login-section h4 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+/* Estilo do botão */
+#login-btn {
+    background-color: #007bff; /* Cor primária */
+    border: none;
+    padding: 10px 20px;
+    font-size: 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#login-btn:hover {
+    background-color: #0056b3; /* Efeito hover */
+}
+
+
+#logout-section {
+    display: block;
+    position: absolute; /* Para o posicionamento em relação à tela */
+    top: 10px; /* Distância do topo da tela */
+    right: 20px; /* Alinha à direita da tela */
+    z-index: 10; /* Garante que o logout fique acima dos outros elementos */
+}
+
+#logout-section p {
+    margin: 0;
+    font-size: 14px;
+    color: black;
+}
+
+#logout-btn {
+    background-color: #D32F2F;
+    color: white;
+    padding: 6px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    margin-top: 0px;
+    position: absolute;
+    right: 0;
+}
+
+#logout-btn:hover {
+    background-color: #B71C1C;
+}
+
 body {
     font-family: Arial, sans-serif;
     background-color: #f4f4f4;
     margin: 0;
     padding: 20px;
+}
+.watermark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: -1; /* Faz com que a marca d'água fique atrás do conteúdo */
+    opacity: 0.3; /* Controla a opacidade da marca d'água */
+    pointer-events: none; /* Impede que a marca d'água interfira com cliques */
+    background-image: url('vr3.png'); /* Caminho para a imagem da marca d'água */
+    background-repeat: no-repeat;
+    background-size: 100%; /* Ajuste o tamanho conforme necessário */
+    width: 100%;
+    height: 100%;
 }
 h1 {
     text-align: center;
@@ -14,6 +109,7 @@ h2 {
     text-align: center ;
     font-size: 1.7rem; /* Aumenta o tamanho do título */
     color: rgb(15, 15, 15);
+    
     
 }
 h5 {
@@ -33,22 +129,24 @@ td{
 .tab.active {
     display: block;
 }
+/* Ajustes nos botões de aba para garantir o espaçamento adequado */
 .tab-buttons {
     text-align: center;
-    margin-bottom: 20px; /* Aumenta a margem inferior */
+    margin-top: 50px; /* Ajuste o topo para garantir que o espaço não se sobreponha */
+    margin-bottom: 20px;
 }
 
-
 .tab-buttons button {
-    padding: 10px 20px; /* Aumenta o padding dos botões */
-    margin: 0 40px; /* Aumenta o espaço entre os botões */
-    font-size: 2.2rem; /* Aumenta o tamanho da fonte dos botões */
+    padding: 10px 20px;
+    margin: 0 40px;
+    font-size: 2.2rem;
     cursor: pointer;
     background-color: #5b89b4;
     color: rgb(15, 15, 15);
     border: none;
-    border-radius: 10px; /* Suaviza mais as bordas dos botões */
+    border-radius: 10px;
 }
+
 .tab-buttons button:hover {
     background-color: #0e4a7c;
 }

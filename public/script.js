@@ -1,26 +1,158 @@
+// Importações
+import { auth } from "./firebase-config.js"; // Importa a instância de auth já inicializada
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
+// Elementos da interface
+const loginSection = document.getElementById("login-section");
+const logoutSection = document.getElementById("logout-section");
+const tabsSection = document.getElementById("tabs-section");
+const userEmail = document.getElementById("user-email");
+const errorMessage = document.getElementById("error-message");
+const loginButton = document.getElementById("login-btn");
+const logoutButton = document.getElementById("logout-btn");
+const lista = document.getElementById('lista');
+const recibo = document.getElementById('recibo');
+const funcionarios = document.getElementById('funcionarios');
 
-   
-    function showTab(tab) {
-        
-        const tabs = document.querySelectorAll('.tab');
-        tabs.forEach(t => {
-            t.classList.remove('active');
-        });
-        document.getElementById(tab).classList.add('active');
-    }
+// Controle de redirecionamento
+let hasCheckedAuth = false;
 
+// Função para exibir a seção de login
+export function showLoginSection() {
+    loginSection.style.display = 'block';
+    logoutSection.style.display = 'none';
+    tabsSection.style.display = 'none';
+    lista.style.display = 'none';
+    funcionarios.style.display = 'none';
+    recibo.style.display = 'none';
+}
 
+// Função para exibir a seção de logout e as abas de funcionalidade
+export function showLogoutSection(userEmailText) {
+    loginSection.style.display = 'none';
+    logoutSection.style.display = 'block';
+    userEmail.textContent = userEmailText;
+    showTab('lista'); // Exibe a aba de lista de funcionários ao fazer login
+}
 
-    document.addEventListener('DOMContentLoaded', () => {
-        fetchCargos();
-        document.getElementById('name_funcionario').value = '';
-        showTab('lista'); // Mostra a aba de cargos ao carregar
+// Função combinada para exibir a aba correspondente
+export function showTab(tabName) {
+    // Ocultar todas as abas
+    lista.style.display = 'none';
+    funcionarios.style.display = 'none';
+    recibo.style.display = 'none';
+
+    const tabs = document.querySelectorAll('.tab');
+    tabs.forEach(t => {
+        t.classList.remove('active');
     });
- //________________________Baixar Excell_________________________________________ 
+
+    // Exibir a aba correspondente e ativar classe
+    const tab = document.getElementById(tabName);
+    if (tab) {
+        tab.style.display = 'block';
+        tab.classList.add('active');
+    }
+}
+
+// Verifica o estado de autenticação
+onAuthStateChanged(auth, (user) => {
+    if (!hasCheckedAuth) {
+        hasCheckedAuth = true;
+        const currentPath = window.location.pathname;
+
+        if (!user) {
+            // Redireciona para login se não autenticado
+            if (!currentPath.endsWith("login.html")) {
+                window.location.href = "login.html";
+            }
+        } else {
+            // Redireciona para o dashboard se autenticado
+            if (currentPath.endsWith("login.html")) {
+                window.location.href = "index.html";
+            } else {
+                showLogoutSection(user.email);
+            }
+        }
+    }
+});
+
+// Login
+if (loginButton) {
+    loginButton.addEventListener("click", () => {
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value.trim();
+
+        errorMessage.textContent = ""; // Limpa mensagens de erro
+
+        if (email && password) {
+            signInWithEmailAndPassword(auth, email, password)
+                .then((userCredential) => {
+                    const user = userCredential.user;
+                    showLogoutSection(user.email);
+                    
+                    setTimeout(() => {
+                        window.location.reload(); // Isso recarrega a página atual
+                    }, 100);
+                    })
+                .catch((error) => {
+                    mostrarErroLogin(error);
+                });
+        } else {
+            errorMessage.textContent = "Por favor, preencha todos os campos.";
+        }
+    });
+}
+
+// Mostra erros no login
+function mostrarErroLogin(error) {
+    if (error.code === "auth/user-not-found") {
+        errorMessage.textContent = "Usuário não encontrado.";
+    } else if (error.code === "auth/wrong-password") {
+        errorMessage.textContent = "Senha incorreta.";
+    } else {
+        errorMessage.textContent = "Erro: " + error.message;
+    }
+}
+
+// Logout
+if (logoutButton) {
+    logoutButton.addEventListener("click", () => {
+        signOut(auth)
+            .then(() => {
+                // Limpar a interface e redirecionar para login
+                showLoginSection();
+                window.location.href = "login.html";
+            })
+            .catch((error) => {
+                console.error("Erro ao sair:", error);
+            });
+    });
+}
+
+// Inicialização ao carregar a página
+document.addEventListener('DOMContentLoaded', () => {
+    fetchCargos(); // Carrega os cargos
+    document.getElementById('name_funcionario').value = ''; // Limpa o campo
+    showTab('lista'); // Exibe a aba de cargos ao carregar
+});
+
+
+// URL BASE
+const apiUrl = "https://salty-reaches-80572-1ddaab341ce6.herokuapp.com"; 
+
+// Teste no console
+console.log(apiUrl);
+
+// Inicializa a interface com base no estado de autenticação
+window.onload = function() {
+    showLoginSection(); // Exibe a seção de login ao carregar a página
+};
+
+//___________________Baixar Excell_________________________________________ 
 
   //---- Função para carregar os checkboxes dentro do modal
-  function carregarCheckboxes(opcoes) {
+ export function carregarCheckboxes(opcoes) {
     const container = document.getElementById('lista-arquivos-excel');
     container.innerHTML = ''; // Limpa as opções anteriores
 
@@ -46,7 +178,7 @@
 }   
 
 // Função para capturar os arquivos selecionados
-function baixarArquivoExcelSelecionado() {
+export function capturarArquivosSelecionados() {
     const checkboxes = document.querySelectorAll('#lista-arquivos-excel input[type="checkbox"]:checked');
     const selecionados = Array.from(checkboxes).map(checkbox => checkbox.value);
 
@@ -60,14 +192,14 @@ function baixarArquivoExcelSelecionado() {
 }
 
 // Função para fechar o modal
-function fecharModalExcel() {
+export function fecharModalExcel() {
     document.getElementById("modal-excel").style.display = "none";
 }
-
+ 
 // Função para abrir o modal quando o botão for clicado
-function abrirModalExcel() {
+export function abrirModalExcel() {
     // Realiza uma requisição para o backend para buscar as equipes
-    fetch('http://127.0.0.1:5000/api/listar_documentos')
+    fetch(`${apiUrl}/api/listar_documentos`)
         .then(response => response.json())
         .then(data => {
             // Carrega as equipes no modal, passando os dados recebidos do servidor
@@ -86,9 +218,9 @@ function formatarData(data) {
     const dia = partes[2];
     return `${dia}/${mes}/${ano}`; // Retorna no formato "dd/mm/yy"
 }
-//---- Envia dados de data e Equipe para gerar o relatorio
 
-function baixarArquivoExcelSelecionado() {
+// Função para baixar o arquivo Excel selecionado
+export function baixarArquivoExcelSelecionado() {
     // Captura as datas
     const dataInicioInput = document.getElementById('data_inicio_relatorio').value;
     const dataFimInput = document.getElementById('data_fim_relatorio').value;
@@ -126,7 +258,7 @@ function baixarArquivoExcelSelecionado() {
 
     console.log("Payload Enviado:", payloadRelatorio); // Verifique se o payload está correto
 
-    fetch('http://127.0.0.1:5000/api/relatorio_periodo', {
+    fetch(`${apiUrl}/api/relatorio_periodo`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -155,7 +287,7 @@ function baixarArquivoExcelSelecionado() {
             documentos: documentos
         };
     
-        return fetch('http://127.0.0.1:5000/api/gerar_relatorio', {
+        return fetch(`${apiUrl}/api/gerar_relatorio`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -190,14 +322,10 @@ function baixarArquivoExcelSelecionado() {
 }
 
 
-
-
-
-
 //_______________________Lista de Funcionarios ________________________________
-    async function fetchCargos() {
+    export async function fetchCargos() {
         try {
-            const response = await fetch('http://127.0.0.1:5000/api/funcionarios'); 
+            const response = await fetch(`${apiUrl}/api/funcionarios`); 
             if (!response.ok) throw new Error('Network response was not ok');
             const funcionarios = await response.json();
             
@@ -320,7 +448,7 @@ function baixarArquivoExcelSelecionado() {
         }
                 
         // Função para filtrar os funcionários pelo nome e cpf
-        function filterFuncionarios() {
+        export function filterFuncionarios() {
             const searchValue = document.getElementById('search-funcionario').value.toLowerCase();
             const rows = document.querySelectorAll('#lista-funcionarios table tbody tr');
 
@@ -336,17 +464,17 @@ function baixarArquivoExcelSelecionado() {
 //__________________________ Gerador de etiquetas ___________________________
 
   // Função para abrir o modal
-function abrirModal() { 
+export function abrirModal() { 
     document.getElementById("modal-gerar-etiqueta").style.display = "flex";
 }
 
 // Função para fechar o modal
-function fecharModal() {
+export function fecharModal() {
     document.getElementById("modal-gerar-etiqueta").style.display = "none";
 }
 
 // Função para gerar a etiqueta
-function gerarEtiqueta() {
+export function gerarEtiqueta() {
     const dataInicio = document.getElementById("data-inicio").value;
     const dataFim = document.getElementById("data-fim").value;
 
@@ -362,7 +490,7 @@ function gerarEtiqueta() {
         data_fim: dataFim
     };
 
-    fetch('http://127.0.0.1:5000/api/gerar-etiquetas', {
+    fetch(`${apiUrl}/api/gerar-etiquetas`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -471,7 +599,7 @@ function editarFuncionarioModal(uidFuncionario, nomeFuncionario, nomefuncao, equ
                  console.log('Dados enviados:', );
     
                 try {
-                    const response = await fetch(`http://127.0.0.1:5000/api/funcionario/${uidFuncionario}`, {
+                    const response = await fetch(`${apiUrl}/api/funcionario/${uidFuncionario}`, {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json'
@@ -545,7 +673,7 @@ function editarFuncionarioModal(uidFuncionario, nomeFuncionario, nomefuncao, equ
         console.log("Dados a serem enviados:", JSON.stringify(funcionariData));
 
         try {
-            const response = await fetch('http://127.0.0.1:5000/api/criar_funcionario', {
+            const response = await fetch(`${apiUrl}/api/criar_funcionario`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -575,6 +703,9 @@ function editarFuncionarioModal(uidFuncionario, nomeFuncionario, nomefuncao, equ
 
     
  //__________________________ Select para a criação do recibo. ___________________________  
+let funcionarioChave = null;
+let nomeFuncionarioSelecionado = null;
+
  $(document).ready(function () {
     // Inicialização do Select2 no campo de seleção
     $('#name_funcionario').select2({
@@ -587,7 +718,7 @@ function editarFuncionarioModal(uidFuncionario, nomeFuncionario, nomefuncao, equ
     // Função para carregar a lista de funcionários e preencher o dropdown
     async function loadFuncionarios() {
         try {
-            const response = await fetch('http://127.0.0.1:5000/api/funcionarios');
+            const response = await fetch(`${apiUrl}/api/funcionarios`);
             const funcionarios = await response.json();
 
             const selectElement = document.getElementById('name_funcionario');
@@ -600,8 +731,8 @@ function editarFuncionarioModal(uidFuncionario, nomeFuncionario, nomefuncao, equ
             selectElement.appendChild(defaultOption);
 
             // Itera sobre os funcionários e cria as opções do dropdown
-            for (const uid in funcionarios) {
-                const funcionario = funcionarios[uid];
+            for (const id in funcionarios) {
+                const funcionario = funcionarios[id];
                 if (funcionario.nome_funcionario) {
                     const option = document.createElement('option');
                     option.value = funcionario._id; // Define o UID (_id) como valor
@@ -682,9 +813,10 @@ function editarFuncionarioModal(uidFuncionario, nomeFuncionario, nomefuncao, equ
          
 
         // Fetch para obter os dados do cargo
-        const funcionarioResponse = await fetch(`http://127.0.0.1:5000/api/funcionarios/${funcionarioId}`);
+        const funcionarioResponse = await fetch(`${apiUrl}/api/funcionarios/${funcionarioId}`);
         if (!funcionarioResponse.ok) {
         console.error('Erro ao buscar dados funcionario:', funcionarioResponse.statusText);
+        alert("Aconteceu um erro. Acione o Administrador!!")
         return;
         }
         const funcionario = await funcionarioResponse.json();
@@ -801,7 +933,7 @@ function editarFuncionarioModal(uidFuncionario, nomeFuncionario, nomefuncao, equ
             try {
                 console.log('Enviando dados para o backend...');
         
-                const response = await fetch('http://127.0.0.1:5000/api/criar_recibo', {
+                const response = await fetch(`${apiUrl}/api/criar_recibo`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
