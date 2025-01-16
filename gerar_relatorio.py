@@ -67,6 +67,7 @@ class GerarExcel:
                         round(doc.get("valor_vale", 0.0), 2),
                         valor_liquido,
                         doc.get("chave_pix", ""),
+                        "O mesmo",
                     ])
 
             # Salva o arquivo em memória (BytesIO)
