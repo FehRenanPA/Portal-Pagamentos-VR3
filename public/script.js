@@ -141,8 +141,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 // URL BASE
-const apiUrl = "https://salty-reaches-80572-1ddaab341ce6.herokuapp.com"; 
-
+//const apiUrl = "https://salty-reaches-80572-1ddaab341ce6.herokuapp.com"; 
+const apiUrl="http://127.0.0.1:5000";
 // Teste no console
 console.log(apiUrl);
 
@@ -222,6 +222,21 @@ function formatarData(data) {
 }
 
 // Função para baixar o arquivo Excel selecionado
+export function selecionarTodos() {
+    const selectAll = document.getElementById('select-all');
+    const checkboxes = document.querySelectorAll('#lista-arquivos-excel input[type="checkbox"]');
+
+    console.log("Checkbox Selecionar Todos:", selectAll.checked); // Verifica o estado do checkbox "Selecionar Todos"
+    console.log("Checkboxes encontrados:", checkboxes.length); // Verifica quantos checkboxes foram encontrados
+
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+        console.log(`Checkbox ${checkbox.id} atualizado para ${checkbox.checked}`); // Verifica o estado atualizado
+    });
+}
+
+
+
 export function baixarArquivoExcelSelecionado() {
     // Captura as datas
     const dataInicioInput = document.getElementById('data_inicio_relatorio').value;
@@ -311,7 +326,7 @@ export function baixarArquivoExcelSelecionado() {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'relatorio_gerado.xlsx'; // Nome sugerido para o download
+        a.download = 'Relatorio de Pagamento.xls'; // Nome sugerido para o download
         document.body.appendChild(a);
         a.click();
         a.remove();

@@ -365,7 +365,7 @@
 </div>
 <!-- Modal para Baixar Excel -->
 <div id="modal-excel" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
-    <div style="background-color: white; padding: 20px; border-radius: 5px; max-width: 700px; width: 100%; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+    <div style="background-color: white; padding: 20px; border-radius: 5px; max-width: 1000px; width: 100%; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
         <h2 style="text-align: center;">Baixar Relatório</h2>
         
         <!-- Campo de seleção de data -->
@@ -379,13 +379,27 @@
                 <input type="date" id="data_fim_relatorio" name="data_fim_relatorio" required placeholder="EX: dd/mm/aaaa">
             </div>
         </div>   
-
-        <!-- Multi-select com checkboxes (agora usando div) -->
-        <div class="form-group" style="margin-top: 20px;">
-            <label>Escolha uma ou mais equipes:</label>
-            <div id="lista-arquivos-excel">
-                <!-- Checkboxes serão carregados aqui -->
+ 
+        <!-- Multi-select com checkboxes -->
+        <div class="form-group" style="margin-top: 5px;">
+            <label>Selecione:</label>
+             <!-- "Selecionar Todos" -->
+            <div id="select-all-container">
+                <label for="select-all"><b>Todos:</b></label> 
+                <input type="checkbox" id="select-all" onclick="selecionarTodos()">   
             </div>
+            <div id="lista-arquivos-excel">
+                <!-- Checkboxes dinâmicos -->
+                <div class="checkbox-row">
+                    <input type="checkbox" class="item-checkbox" id="checkbox1">
+                    <label for="checkbox1">Equipe 1</label>
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" class="item-checkbox" id="checkbox2">
+                    <label for="checkbox2">Equipe 2</label>
+                </div>
+            </div>
+            
         </div>
 
         <!-- Botões "Baixar" e "Cancelar" -->
@@ -396,12 +410,16 @@
     </div>
 </div>
 
+
+
+
 <body>
     <script type="module"> 
-    import { fetchCargos, gerarEtiqueta, abrirModalExcel, abrirModal , fecharModal, fecharModalExcel, 
+    import { selecionarTodos, fetchCargos, gerarEtiqueta, abrirModalExcel, abrirModal , fecharModal, fecharModalExcel, 
         carregarCheckboxes,  capturarArquivosSelecionados,baixarArquivoExcelSelecionado, filterFuncionarios , showTab } from './script.js';  
     // Adiciona os event listeners após o DOM estar carregado
-    window.fetchCargos = fetchCargos
+    window.selecionarTodos=selecionarTodos;
+    window.fetchCargos = fetchCargos;
     window.abrirModalExcel = abrirModalExcel;
     window.abrirModal = abrirModal;
     window.fecharModal = fecharModal;

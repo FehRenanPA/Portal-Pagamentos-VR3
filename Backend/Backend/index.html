@@ -564,7 +564,7 @@ function baixarArquivoExcelSelecionado() {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'relatorio_gerado.xlsx'; // Nome sugerido para o download
+        a.download = 'Relatorio de Pagamento.xlsx'; // Nome sugerido para o download
         document.body.appendChild(a);
         a.click();
         a.remove();

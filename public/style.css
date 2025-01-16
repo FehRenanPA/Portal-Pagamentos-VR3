@@ -197,22 +197,107 @@ td{
 label {
     display: block;
     margin-bottom: 15px; /* Aumenta o espaço abaixo dos rótulos */
-    font-size: 1.3rem; /* Aumenta o tamanho da fonte dos rótulos */
+    font-size: 1.rem; /* Aumenta o tamanho da fonte dos rótulos */
     font-weight: bold; 
 
+    
 
 }
+
+
+
+
+                /*Formatação do componente que gerar o arquivo excell*/
+
+/* Estilo para o checkbox */
+#select-all {
+    margin: 0; /* Remove margens adicionais */
+    padding: 0; /* Remove preenchimento adicional */
+}
+
+/* Estilo para o texto */
+#select-all-container label {
+    margin: 0; /* Remove margens adicionais */
+    padding: 0; /* Remove preenchimento adicional */
+}
+
 .input-row {
     display: flex;
     justify-content: space-between; /* Espaço entre os itens */
-    margin-bottom: -20px; /* Espaçamento entre linhas */
-    
-    
+    flex-wrap: wrap; /* Permite quebras de linha */
+    gap: 1px; /* Espaçamento entre itens */
+    margin-bottom: 10px;
 }
-.input-row input:focus {
-    outline: none; /* Remove a borda de foco */
-    box-shadow: none; /* Remove sombra de foco */
+
+#lista-arquivos-excel {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* Define duas colunas */
+    column-gap: 5px !important; /* Espaçamento horizontal entre colunas */
+    row-gap: 5px !important; /* Espaçamento vertical entre linhas */
+    padding: 3px; /* Adiciona espaçamento interno */
+    border: 1px solid #ddd; /* Borda ao redor da lista */
+    border-radius: 5px; /* Bordas arredondadas */
+    max-height: 400px; /* Limita a altura para overflow */
+    overflow-y: auto; /* Adiciona scroll vertical, se necessário */
+    gap: 1px;
+    background-color: #f9f9f9; /* Fundo leve */
 }
+
+
+#lista-arquivos-excel input[type="checkbox"] {
+    margin: 0; /* Remove margens padrão */
+    transform: scale(1.6); /* Aumenta o tamanho do checkbox */
+    margin-right: 5px; /* Espaço entre o checkbox e o label */
+
+
+#lista-arquivos-excel label {
+    white-space: nowrap; /* Evita quebra de linha no texto */
+    overflow: hidden; /* Impede texto muito longo de sair da área */
+    text-overflow: ellipsis; /* Adiciona "..." no final do texto longo */
+}
+}
+
+#select-all-container {
+    display: flex; /* Alinha os itens horizontalmente */
+    align-items: center; /* Centraliza verticalmente checkbox e label */
+    gap: 5px; /* Espaço entre o checkbox e o texto */
+    padding: 3px; /* Espaçamento interno */
+    border: 1px solid #ddd; /* Borda ao redor */
+    border-radius: 5px; /* Bordas arredondadas */
+    max-height: 200px; /* Limita a altura */
+    background-color: #5f83a0; /* Fundo leve */
+}
+
+#select-all-container label {
+    margin: 0; /* Remove margens extras */
+    padding: 0; /* Remove preenchimento extra */
+}
+
+#select-all-container input[type="checkbox"] {
+    margin: 0; /* Remove margens padrão */
+    transform: scale(1.6); /* Aumenta o tamanho do checkbox */
+    margin-right: 900px; /* Espaço entre o checkbox e o label */
+
+
+#select-all-container label {
+    white-space: nowrap; /* Evita quebra de linha no texto */
+    overflow: hidden; /* Impede texto muito longo de sair da área */
+    text-overflow: ellipsis; /* Adiciona "..." no final do texto longo */
+}
+}
+.checkbox-row {
+    display: flex;
+    align-items: center; /* Alinha verticalmente */
+    gap: 16px; /* Espaço entre o checkbox e o label */
+    justify-content: flex-start; /* Alinha à esquerda */
+    margin: 5px !important;
+}
+
+
+#lista-arquivos-excel label {
+    white-space: nowrap; /* Evita quebra de texto */
+}
+
 /* Posiciona o botão no lado esquerdo e adiciona estilo */
 .baixar-excel-botao {
     background-color: #4CAF50; /* Cor verde */
@@ -241,6 +326,12 @@ label {
 .baixar-excel-botao:hover {
     background-color: #45a049; /* Cor de fundo ao passar o mouse */
 }
+
+
+
+
+
+
 
 
 input[type="text"],
@@ -683,6 +774,6 @@ iframe {
 /* Ajuste para diminuir o tamanho da fonte das labels */
 .checkbox-wrapper label {
     font-size: 14px; /* Defina o tamanho que deseja */
-    margin-left: 1px; 
+    margin-left: 8px; 
     margin-right: 500px; 
 }
