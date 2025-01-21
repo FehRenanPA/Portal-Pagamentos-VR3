@@ -4,7 +4,7 @@ import datetime
 import io
 
 class GerarExcel:
-    def __init__(self, data_inicio, data_fim, equipes, documentos, titular):
+    def __init__(self, data_inicio, data_fim, equipes, documentos):
         """
         Inicializa o gerador de relatórios.
 
@@ -17,7 +17,6 @@ class GerarExcel:
         self.data_fim = data_fim
         self.equipes = equipes
         self.documentos = documentos
-        self.titular = titular if titular else "O mesmo"
 
     def formatar_cpf(self, cpf):
         """
@@ -59,7 +58,6 @@ class GerarExcel:
             for i, doc in enumerate(self.documentos, start=1):
                 valor_liquido = round(doc.get("valor_total", 0.0), 2)
                 if valor_liquido >= 0:  # Verifica se o Valor Líquido é maior ou igual a 0
-                    print(f"Adicionando documento {i}: {doc.get('nome', '')}, Titular: {self.titular}")
                     sheet.append([
                         i,
                         doc.get("nome", ""),
@@ -69,7 +67,7 @@ class GerarExcel:
                         round(doc.get("valor_vale", 0.0), 2),
                         valor_liquido,
                         doc.get("chave_pix", ""),
-                        self.titular,
+                        "O mesmo",
                     ])
 
             # Salva o arquivo em memória (BytesIO)

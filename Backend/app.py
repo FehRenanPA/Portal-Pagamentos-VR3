@@ -511,13 +511,22 @@ def criar_funcionario():
         insert_result = colecao.insert_one(novo_funcionario)
         
         funcionario_id = str(insert_result.inserted_id)
-
         novo_funcionario['_id'] = funcionario_id
+        # Consulta os dados atualizados no banco para garantir consistência
+        dados_atualizados = list(colecao.find({}, {'_id': 0}))  # Exclui o campo `_id` bruto no retorno
 
-        return jsonify({'message': 'Funcionário criado com sucesso!', '_id': funcionario_id, 'data': novo_funcionario}), 201
+        # Retorna uma mensagem de sucesso com o ID do novo funcionário e os dados atualizados
+        return jsonify({
+            'message': 'Funcionário criado com sucesso!',
+            '_id': funcionario_id,
+            'dados_atualizados': dados_atualizados
+        }), 201
+
     except Exception as e:
+        # Log detalhado para depuração
         print("Erro inesperado ao criar funcionário:", e)
-        print(traceback.format_exc())  # Log detalhado do erro
+        import traceback
+        print(traceback.format_exc())
         return jsonify({'error': f'Erro interno do servidor: {str(e)}'}), 500
 
  
@@ -551,11 +560,22 @@ def update_funcionario(funcionario_id):
             return jsonify({'message': 'Funcionário não encontrado.'}), 404
 
         return jsonify({'message': 'Funcionário atualizado com sucesso.'})
+        # Consultar o banco para retornar os dados atualizados do funcionário
+        funcionario_atualizado = colecao.find_one({'_id': funcionario_id}, {'_id': 0})
+
+        # Consultar todos os dados para garantir consistência no front-end
+        dados_atualizados = list(colecao.find({}, {'_id': 0}))
+
+        return jsonify({
+            'message': 'Funcionário atualizado com sucesso.',
+            'funcionario_atualizado': funcionario_atualizado,
+            'dados_atualizados': dados_atualizados
+        })
 
     except Exception as e:
         # Registra o erro completo no log
-        app.logger.error(f"Erro ao atualizar o funcionário {funcionario_id}: {str(e)}")
-        return jsonify({'message': 'Erro interno ao processar a requisição.'}), 500
+        app.logger.error(f"Erro ao atualizar o funcionário {funcionario_id}: {str(e)}", exc_info=True)
+        return jsonify({'message': 'Erro interno ao processar a requisição.'}), 500 
     
 ###---------------------------------------> Criar Recibo <--------------------------------------------##
 
