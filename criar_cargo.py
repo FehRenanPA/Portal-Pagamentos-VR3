@@ -6,11 +6,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# URI de conexão ao MongoDB
 uri = os.getenv("MONGO_URI")
 client = MongoClient(uri)
-
-# Seleciona banco e coleção
 db = client['FUNCIONARIOS_VR3_PAGAMENTOS']
 colecao = db['funcionario']
 
@@ -19,22 +16,41 @@ class CriarFuncionario:
 
     @staticmethod
     def carregar_funcionarios():
-        """Carrega todos os funcionários do MongoDB ou do arquivo JSON, se o MongoDB não estiver acessível."""
+        """
+        Carrega todos os funcionários na seguinte ordem:
+        1. MongoDB.
+        2. Cache na memória (funcionario_dict).
+        3. Arquivo JSON.
+        """
+        # 1. Tenta carregar do MongoDB
         try:
-            # Tenta carregar do MongoDB
-            funcionarios = colecao.find()  # Recupera todos os documentos da coleção
+            funcionarios = colecao.find()  # Recupera todos os documentos
             funcionario_dict = {str(func['_id']): func for func in funcionarios}
-            print(f"Funcionários carregados do MongoDB: {funcionario_dict}")
+            CriarFuncionario.funcionario_dict = funcionario_dict  # Atualiza o cache
+            print("Funcionários carregados do MongoDB e cache atualizado.")
             return funcionario_dict
         except Exception as e:
-            # Se falhar, tenta carregar do arquivo JSON
-            print(f"Erro ao carregar do MongoDB: {e}. Tentando carregar do arquivo JSON...")
+            print(f"Erro ao carregar do MongoDB: {e}")
+
+        # 2. Tenta carregar do cache
+        if CriarFuncionario.funcionario_dict:
+            print("Funcionários carregados do cache.")
+            return CriarFuncionario.funcionario_dict
+
+        # 3. Tenta carregar do arquivo JSON
+        try:
             if os.path.exists('funcionario.json'):
                 with open('funcionario.json', 'r') as file:
                     funcionarios = json.load(file)
-                    print(f"Funcionários carregados do arquivo JSON: {funcionarios}")
+                    CriarFuncionario.funcionario_dict = funcionarios  # Atualiza o cache
+                    print("Funcionários carregados do arquivo JSON e cache atualizado.")
                     return funcionarios
-            return {}
+        except Exception as e:
+             print(f"Erro ao carregar do arquivo JSON: {e}")
+
+        # 4. Se nenhuma fonte for encontrada, retorna vazio
+        print("Nenhuma fonte disponível para carregar os funcionários.")
+        return {}    
 
     @staticmethod
     def carregar_funcionario_por_id(funcionario_id):
@@ -104,6 +120,7 @@ class CriarFuncionario:
         """Exclui um funcionário do MongoDB."""
         colecao.delete_one({"name": nome_funcionario})
         print(f"Funcionário {nome_funcionario} excluído com sucesso.")
+
 
 def main():
     CriarFuncionario.funcionario_dict = CriarFuncionario.carregar_funcionarios()
