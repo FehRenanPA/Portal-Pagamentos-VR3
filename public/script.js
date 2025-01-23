@@ -153,31 +153,43 @@ window.onload = function() {
 
 //___________________Baixar Excell_________________________________________ 
 
-  //---- Função para carregar os checkboxes dentro do modal
- export function carregarCheckboxes(opcoes) {
+export function carregarCheckboxes(opcoes) {
     const container = document.getElementById('lista-arquivos-excel');
+    const selecaoCheckboxes = document.getElementById('opcoes-baixar-excell');
+
     container.innerHTML = ''; // Limpa as opções anteriores
 
     // Filtra as equipes distintas
-    const equipesUnicas = new Set(opcoes.map(opcao => opcao.equipe));  // Extrai e filtra as equipes únicas
+    const equipesUnicas = new Set(opcoes.map(opcao => opcao.equipe)); // Extrai e filtra as equipes únicas
 
-    // Adiciona os checkboxes ao modal
-    equipesUnicas.forEach(equipe => {
-        const checkboxWrapper = document.createElement('div');
-        checkboxWrapper.classList.add('checkbox-wrapper');  // Aplica a classe CSS
+    if (equipesUnicas.size > 0) {
+        // Adiciona os checkboxes ao modal
+        equipesUnicas.forEach(equipe => {
+            const checkboxWrapper = document.createElement('div');
+            checkboxWrapper.classList.add('checkbox-wrapper'); // Aplica a classe CSS
 
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.value = equipe; // Usando o nome da equipe para identificar a opção
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.value = equipe; // Usando o nome da equipe para identificar a opção
 
-        const label = document.createElement('label');
-        label.textContent = equipe;  // Exibe o nome da equipe
+            const label = document.createElement('label');
+            label.textContent = equipe; // Exibe o nome da equipe
 
-        checkboxWrapper.appendChild(checkbox);
-        checkboxWrapper.appendChild(label);
-        container.appendChild(checkboxWrapper);
-    });
-}   
+            checkboxWrapper.appendChild(checkbox);
+            checkboxWrapper.appendChild(label);
+            container.appendChild(checkboxWrapper);
+        });
+
+        // Exibe o container dos checkboxes
+        selecaoCheckboxes.style.display = 'block';
+    } else {
+        // Oculta o container se não houver resultados
+        selecaoCheckboxes.style.display = 'none';
+        opcoesBaixarExcel.style.display = 'none';
+        alert('Nenhuma equipe encontrada!');
+    }
+}
+ 
 
 // Função para capturar os arquivos selecionados
 export function capturarArquivosSelecionados() {
@@ -198,20 +210,6 @@ export function fecharModalExcel() {
     document.getElementById("modal-excel").style.display = "none";
 }
  
-// Função para abrir o modal quando o botão for clicado
-export function abrirModalExcel() {
-    // Realiza uma requisição para o backend para buscar as equipes
-    fetch(`${apiUrl}/api/listar_documentos`)
-        .then(response => response.json())
-        .then(data => {
-            // Carrega as equipes no modal, passando os dados recebidos do servidor
-            carregarCheckboxes(data);
-            // Exibe o modal
-            document.getElementById("modal-excel").style.display = "flex";
-        })
-        .catch(error => console.error("Erro ao carregar equipes:", error));
-}
-
 // Função para formatar a data no formato "dd/mm/yy"
 function formatarData(data) {
     const partes = data.split('-'); // Divide a data no formato "yyyy-mm-dd"
@@ -220,6 +218,42 @@ function formatarData(data) {
     const dia = partes[2];
     return `${dia}/${mes}/${ano}`; // Retorna no formato "dd/mm/yy"
 }
+
+export function abrirModalExcel() {
+    // Apenas exibe o modal, sem fazer requisição inicial à API
+    document.getElementById("modal-excel").style.display = "flex";
+}
+export function pesquisarEquipes() {
+    const data_Inicio = document.getElementById('data_inicio_relatorio').value;
+    const data_Fim = document.getElementById('data_fim_relatorio').value;
+
+    const dataInicio = formatarData(data_Inicio);
+    const dataFim = formatarData(data_Fim);
+
+    if (!dataInicio || !dataFim) {
+        alert("Por favor, preencha as datas de início e fim para realizar a pesquisa.");
+        return;
+    }
+
+    fetch(`${apiUrl}/api/listar_documentos?data_inicio=${dataInicio}&data_fim=${dataFim}`)
+    .then(response => response.json())
+    .then(data => {
+        carregarCheckboxes(data); // Carrega os checkboxes com os dados filtrados
+        setTimeout(() => {
+            const opcoesBaixarExcell = document.getElementById('opcoes-baixar-excell');
+            if (opcoesBaixarExcell) {
+                opcoesBaixarExcell.style.display = "flex"; // Exibe as opções de baixar
+            } else {
+                console.warn("Elemento 'opcoes-baixar-excell' não encontrado no DOM.");
+            }
+        }, 20); // Executa após o loop principal
+    })
+    .catch(error => {
+        console.error("Erro ao buscar equipes:", error);
+        alert("Erro ao buscar equipes. Tente novamente.");
+    });
+}
+
 
 // Função para baixar o arquivo Excel selecionado
 export function selecionarTodos() {

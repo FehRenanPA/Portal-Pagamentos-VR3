@@ -47,13 +47,26 @@ class MongoDBHandler:
             logger.exception("Detalhes completos da exceção:")
             return None 
 
-    def buscar_dado(self, filtro):
+    def buscar_dado(self, data_inicio=None, data_fim=None):
         """
-        Busca documentos na coleção com base em um filtro.
+        Busca documentos na coleção com base em um intervalo de datas.
+
+        :param data_inicio: Data inicial (string no formato 'YYYY-MM-DD').
+        :param data_fim: Data final (string no formato 'YYYY-MM-DD').
+        :return: Lista de documentos encontrados.
         """
         try:
-            resultado = self.colecao.find(filtro)  # Corrigido para self.colecao
-            return list(resultado)  # Retorna uma lista de resultados
+            filtro = {}
+            if data_inicio:
+                filtro["data_inicio"] = {"$gte": data_inicio}
+            if data_fim:
+                filtro["data_fim"] = {"$lte": data_fim}
+
+            logger.debug(f"Usando o filtro: {filtro}")
+            
+            # Busca no banco de dados
+            resultado = self.colecao.find(filtro)
+            return list(resultado)  # Converte o cursor em uma lista
         except Exception as e:
             print(f"Erro ao buscar dado: {e}")
             return []

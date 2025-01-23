@@ -1,10 +1,7 @@
 from criar_cargo import CriarFuncionario
 import logging
 
-
-
-funcionario_dict = CriarFuncionario.carregar_funcionarios()
-
+#funcionario_dict = CriarFuncionario.carregar_funcionarios()
 
 # Valida se os dados foram carregados corretamente
 class Sub_total_um:
@@ -72,7 +69,10 @@ class Sub_total_um:
         self.diferenca_calculo += valor    
         
     def valida_funcionario(self):
+        #Bucar somente quando a class  gerar olerite for chamada
+        funcionario_dict = CriarFuncionario.carregar_funcionarios()
         print(f"Cargos disponíveis: {list(funcionario_dict.keys())}")
+        
         funcionario_normalizado = self.name_funcionario.strip().lower()
         # Normaliza o dicionário de cargos para comparação
         funcionario_dict_normalizado = {k.strip().lower(): v for k, v in funcionario_dict.items()}

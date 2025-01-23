@@ -42,14 +42,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Inicializar o Firebase Admin 
-
-#cred_path = os.getenv("FIREBASE_CREDENTIALS_PATH")
-#print(f"Caminho das credenciais: {cred_path}")
-
-#if not cred_path or not os.path.exists(cred_path):
-    #logger.error("Arquivo de credenciais do Firebase não encontrado! Verifique a configuração.")
-    #raise FileNotFoundError("Arquivo de credenciais do Firebase não encontrado!")
     
 cred_path = {
     "type": "service_account",
@@ -267,16 +259,43 @@ else:
 ###-----------------Busca dados para gerar o Relatorio/Excell com dados do Mongo--------------------------#####
 
                    # Listagem geral 
+
 @app.route('/api/listar_documentos', methods=['GET'])
 def listar_documentos():
     try:
-        documentos = db_handler.buscar_dado({})
-        documentos_serializados = [serialize_document(doc) for doc in documentos]  # Serializa cada documento
-        logger.info(f"Documentos encontrados: {documentos_serializados}")
+        # Obtém os parâmetros de data do front-end
+        data_inicio = request.args.get('data_inicio')
+        data_fim = request.args.get('data_fim')
+
+        # Validação dos parâmetros obrigatórios
+        if not data_inicio or not data_fim:
+            logger.warning("Parâmetros obrigatórios ausentes.")
+            return jsonify({"erro": "Os parâmetros 'data_inicio' e 'data_fim' são obrigatórios."}), 400
+
+        logger.info(f"Recebendo solicitação para listar documentos entre {data_inicio} e {data_fim}.")
+
+        # Busca os documentos com base no intervalo de datas
+        try:
+            documentos = db_handler.buscar_dado(data_inicio=data_inicio, data_fim=data_fim)
+        except Exception as e:
+            logger.error(f"Erro ao buscar documentos no banco de dados: {e}", exc_info=True)
+            return jsonify({"erro": "Erro ao buscar documentos no banco de dados."}), 500
+
+        if not documentos:
+            logger.info(f"Nenhum documento encontrado entre {data_inicio} e {data_fim}.")
+            return jsonify({"mensagem": "Nenhum documento encontrado para o intervalo especificado."}), 404
+
+        # Serializa os documentos encontrados
+        documentos_serializados = [serialize_document(doc) for doc in documentos]
+
+        logger.info(f"Documentos encontrados: {len(documentos_serializados)} documentos.")
         return jsonify(documentos_serializados), 200
+
     except Exception as e:
-        logger.error(f"Erro ao listar documentos: {e}", exc_info=True)
-        return jsonify({"erro": "Erro ao listar documentos"}), 500
+        logger.error(f"Erro inesperado ao listar documentos: {e}", exc_info=True)
+        return jsonify({"erro": "Erro inesperado ao listar documentos"}), 500
+
+    
 
 #-------- Listagem Especifica e gerar arquivo excell
 @app.route('/api/relatorio_periodo', methods=['POST'])
@@ -621,6 +640,11 @@ def criar_recibo():
             app.logger.error(f"Erro ao converter valores numéricos: {e}")
             return jsonify({'error': 'Valores de horas devem ser numéricos!'}), 400
 
+        
+        # Busca do funcionário no banco atualizado
+        app.logger.info("Carregando funcionários atualizados do banco...")
+        funcionario_dict = CriarFuncionario.carregar_funcionarios()
+        
         # Busca do funcionário
         funcionario_id = data['name_funcionario']
         app.logger.info(f"Buscando informações do funcionário com ID: {funcionario_id}")
@@ -667,7 +691,7 @@ def criar_recibo():
             app.logger.info("PDF gerado com sucesso.")
         except Exception as e:
             logger.error(f"Erro ao gerar o PDF: {e}", exc_info=True)
-            return jsonify({'error': 'Erro ao gerar o PDF do recibo!'}), 500
+            return jsonify({'error': 'Erro ao gerar o PDF do recibo. Consulte o administador do sistema!'}), 500
 
         # Envio do PDF para o cliente
         app.logger.info("Enviando o PDF gerado para o cliente...")
