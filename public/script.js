@@ -4,8 +4,8 @@ import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https:/
 
 
 //---------------------------------------- URL BASE ----------------------------------------//
-//const apiUrl = "https://salty-reaches-80572-1ddaab341ce6.herokuapp.com"; 
-const apiUrl="http://127.0.0.1:5000";
+const apiUrl = "https://salty-reaches-80572-1ddaab341ce6.herokuapp.com"; 
+//const apiUrl="http://127.0.0.1:5000";
 console.log(apiUrl);
 
 //---------------------- Elementos da interface usados para logar com o firebase------------//

@@ -86,9 +86,9 @@ class MongoDBHandler:
             if equipes:
                 filtro["equipe"] = {"$in": equipes}
             if data_inicio:
-                filtro["data_inicio"] = {"$gte": data_inicio}
+                filtro["data_inicio"] = data_inicio
             if data_fim:
-                filtro["data_fim"] = {"$lte": data_fim}
+                filtro["data_fim"] = data_fim
 
             logger.debug(f"Usando o filtro: {filtro}")
 
