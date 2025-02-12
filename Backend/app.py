@@ -259,9 +259,7 @@ else:
 
 
 ###-----------------Busca dados para gerar o Relatorio/Excell com dados do Mongo--------------------------#####
-
                    # Listagem geral 
-
 @app.route('/api/listar_documentos', methods=['GET'])
 def listar_documentos():
     try:
