@@ -693,7 +693,11 @@ li {
 .form-group input,
 .form-group select {
     width: 100%; /* Faz o input ocupar 100% da largura do grupo */
+<<<<<<< HEAD
+    padding: 8px; /* Adiciona padding para um visual melhor */
+=======
     padding: 5px; /* Adiciona padding para um visual melhor */
+>>>>>>> 28922aefcf2966260ba3410c7ef92d079acbdbba
     border: 3px solid #444; /* Adiciona borda */
     border-radius: 10px; /* Bordas arredondadas */
 }
@@ -746,6 +750,10 @@ iframe {
 }
 
 .close:hover {
+<<<<<<< HEAD
+    background-color: #aaa; /* Cor mais escura ao passar o mouse */
+}
+=======
     background-color: #807e7e; /* Cor mais escura ao passar o mouse */
 }
 /* Garantir que o modal e seus elementos estejam bem posicionados */
@@ -777,3 +785,4 @@ iframe {
     margin-left: 8px; 
     margin-right: 500px; 
 }
+>>>>>>> 28922aefcf2966260ba3410c7ef92d079acbdbba

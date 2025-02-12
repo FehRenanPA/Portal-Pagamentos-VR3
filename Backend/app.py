@@ -56,7 +56,6 @@ cred_path = {
     "client_x509_cert_url": os.getenv('FIREBASE_CLIENT_X509_CERT_URL'),
     "universe_domain": os.getenv('FIREBASE_UNIVERSE_DOMAIN')
 }    
-print(cred_path)
 
 cred = credentials.Certificate(cred_path) 
 print(f"Service Account Email: {cred.service_account_email}")  

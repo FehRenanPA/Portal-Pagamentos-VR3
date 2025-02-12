@@ -1,12 +1,23 @@
 specVersion: "v1beta"
+<<<<<<< HEAD
+serviceId: "POC CONSTRUMAQUE"
+location: "us-central1"
+=======
 serviceId: "Portal de Pagamentos VR3"
 location: "australia-southeast2"
+>>>>>>> 28922aefcf2966260ba3410c7ef92d079acbdbba
 schema:
   source: "./schema"
   datasource:
     postgresql:
+<<<<<<< HEAD
+      database: "fdcdb"
+      cloudSql:
+        instanceId: "POC CONSTRUMAQUE-fdc"
+=======
       database: "postgres"
       cloudSql:
         instanceId: "portal-pagamentos-vr3-fdc"
+>>>>>>> 28922aefcf2966260ba3410c7ef92d079acbdbba
       # schemaValidation: "COMPATIBLE"
 connectorDirs: ["./connector"]
