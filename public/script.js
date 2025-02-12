@@ -2,7 +2,13 @@
 import { auth } from "./firebase-config.js"; // Importa a instância de auth já inicializada
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
-// Elementos da interface
+
+//---------------------------------------- URL BASE ----------------------------------------//
+//const apiUrl = "https://salty-reaches-80572-1ddaab341ce6.herokuapp.com"; 
+const apiUrl="http://127.0.0.1:5000";
+console.log(apiUrl);
+
+//---------------------- Elementos da interface usados para logar com o firebase------------//
 const loginSection = document.getElementById("login-section");
 const logoutSection = document.getElementById("logout-section");
 const tabsSection = document.getElementById("tabs-section");
@@ -17,6 +23,8 @@ const funcionarios = document.getElementById('funcionarios');
 // Controle de redirecionamento
 //let hasCheckedAuth = false;
 
+
+//----------------------------- Controle de acesso usando o Fire base -------------------------//
 // Função para exibir a seção de login
 export function showLoginSection() {
     loginSection.style.display = 'block';
@@ -104,8 +112,6 @@ if (loginButton) {
 
 
 
-
-
 // Mostra erros no login
 function mostrarErroLogin(error) {
     if (error.code === "auth/user-not-found") {
@@ -140,19 +146,121 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-// URL BASE
-const apiUrl = "https://salty-reaches-80572-1ddaab341ce6.herokuapp.com"; 
-//const apiUrl="http://127.0.0.1:5000";
-// Teste no console
-console.log(apiUrl);
-
 // Inicializa a interface com base no estado de autenticação
 window.onload = function() {
     showLoginSection(); // Exibe a seção de login ao carregar a página
 };
 
-//___________________Baixar Excell_________________________________________ 
+//-------------------- Gerador de etiquetas -----------------------------
 
+  // Função para abrir o modal
+  export function abrirModal() { 
+    document.getElementById("modal-gerar-etiqueta").style.display = "flex";
+}
+
+// Função para fechar o modal
+export function fecharModal() {
+    document.getElementById("modal-gerar-etiqueta").style.display = "none";
+}
+
+// Função para gerar a etiqueta
+export function gerarEtiqueta() {
+    const dataInicio = document.getElementById("data-inicio").value;
+    const dataFim = document.getElementById("data-fim").value;
+
+    // Verifica se as datas estão preenchidas
+    if (!dataInicio || !dataFim) {
+        alert("Por favor, preencha as datas de início e fim.");
+        return;
+    }
+
+    // Configuração para envio da requisição ao backend
+    const payload = {
+        data_inicio: dataInicio,
+        data_fim: dataFim
+    };
+
+    fetch(`${apiUrl}/api/gerar-etiquetas`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Erro na resposta da rede');
+        }
+        return response.blob();
+    })
+    .then(blob => {
+        // Baixa o arquivo gerado pelo backend
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'Etiquetas.pdf';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+
+        // Fecha o modal após gerar a etiqueta
+        fecharModal();
+    })
+    .catch(error => {
+        console.error("Erro ao gerar etiqueta:", error);
+        alert("Erro ao gerar etiqueta. Tente novamente.");
+    });
+}
+
+//--------------------- Baixar Excell do relatorio de pagamentos ----------------------------------//
+
+     //Abrir Modal
+export function abrirModalExcel() {
+    // Apenas exibe o modal, sem fazer requisição inicial à API
+    document.getElementById("modal-excel").style.display = "flex";
+}
+
+   // Fechar modal
+   
+export function fecharModalExcel() {
+    document.getElementById("modal-excel").style.display = "none";
+}
+
+//----- Realiza pesquisa no Banco e retorna as equipes de acordo com o pedirido ->  "Pesquisar"
+export function pesquisarEquipes() {
+    const data_Inicio = document.getElementById('data_inicio_relatorio').value;
+    const data_Fim = document.getElementById('data_fim_relatorio').value;
+
+    const dataInicio = formatarData(data_Inicio);
+    const dataFim = formatarData(data_Fim);
+
+    if (!dataInicio || !dataFim) {
+        alert("Por favor, preencha as datas de início e fim para realizar a pesquisa.");
+        return;
+    }
+
+    fetch(`${apiUrl}/api/listar_documentos?data_inicio=${dataInicio}&data_fim=${dataFim}`)
+    .then(response => response.json())
+    .then(data => {
+        carregarCheckboxes(data); // Carrega os checkboxes com os dados filtrados
+        setTimeout(() => {
+            const opcoesBaixarExcell = document.getElementById('opcoes-baixar-excell');
+            if (opcoesBaixarExcell) {
+                opcoesBaixarExcell.style.display = "flex"; // Exibe as opções de baixar
+            } else {
+                console.warn("Elemento 'opcoes-baixar-excell' não encontrado no DOM.");
+            }
+        }, 20); // Executa após o loop principal
+    })
+    .catch(error => {
+        console.error("Erro ao buscar equipes:", error);
+        alert("Erro ao buscar equipes. Tente novamente.");
+    });
+}
+
+
+//----- Listagem dos registros retornados do back nos checkboxes
 export function carregarCheckboxes(opcoes) {
     const container = document.getElementById('lista-arquivos-excel');
     const selecaoCheckboxes = document.getElementById('opcoes-baixar-excell');
@@ -191,6 +299,22 @@ export function carregarCheckboxes(opcoes) {
 }
  
 
+
+
+// Função que seleciona todos os checkboxes
+export function selecionarTodos() {
+    const selectAll = document.getElementById('select-all');
+    const checkboxes = document.querySelectorAll('#lista-arquivos-excel input[type="checkbox"]');
+
+    console.log("Checkbox Selecionar Todos:", selectAll.checked); // Verifica o estado do checkbox "Selecionar Todos"
+    console.log("Checkboxes encontrados:", checkboxes.length); // Verifica quantos checkboxes foram encontrados
+
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+        console.log(`Checkbox ${checkbox.id} atualizado para ${checkbox.checked}`); // Verifica o estado atualizado
+    });
+}
+
 // Função para capturar os arquivos selecionados
 export function capturarArquivosSelecionados() {
     const checkboxes = document.querySelectorAll('#lista-arquivos-excel input[type="checkbox"]:checked');
@@ -205,12 +329,8 @@ export function capturarArquivosSelecionados() {
     }
 }
 
-// Função para fechar o modal
-export function fecharModalExcel() {
-    document.getElementById("modal-excel").style.display = "none";
-}
  
-// Função para formatar a data no formato "dd/mm/yy"
+// Função para formatar a data no formato "dd/mm/yy" para o envio para o back formato
 function formatarData(data) {
     const partes = data.split('-'); // Divide a data no formato "yyyy-mm-dd"
     const ano = partes[0].slice(-2); // Obtém os últimos dois dígitos do ano
@@ -219,58 +339,8 @@ function formatarData(data) {
     return `${dia}/${mes}/${ano}`; // Retorna no formato "dd/mm/yy"
 }
 
-export function abrirModalExcel() {
-    // Apenas exibe o modal, sem fazer requisição inicial à API
-    document.getElementById("modal-excel").style.display = "flex";
-}
-export function pesquisarEquipes() {
-    const data_Inicio = document.getElementById('data_inicio_relatorio').value;
-    const data_Fim = document.getElementById('data_fim_relatorio').value;
 
-    const dataInicio = formatarData(data_Inicio);
-    const dataFim = formatarData(data_Fim);
-
-    if (!dataInicio || !dataFim) {
-        alert("Por favor, preencha as datas de início e fim para realizar a pesquisa.");
-        return;
-    }
-
-    fetch(`${apiUrl}/api/listar_documentos?data_inicio=${dataInicio}&data_fim=${dataFim}`)
-    .then(response => response.json())
-    .then(data => {
-        carregarCheckboxes(data); // Carrega os checkboxes com os dados filtrados
-        setTimeout(() => {
-            const opcoesBaixarExcell = document.getElementById('opcoes-baixar-excell');
-            if (opcoesBaixarExcell) {
-                opcoesBaixarExcell.style.display = "flex"; // Exibe as opções de baixar
-            } else {
-                console.warn("Elemento 'opcoes-baixar-excell' não encontrado no DOM.");
-            }
-        }, 20); // Executa após o loop principal
-    })
-    .catch(error => {
-        console.error("Erro ao buscar equipes:", error);
-        alert("Erro ao buscar equipes. Tente novamente.");
-    });
-}
-
-
-// Função para baixar o arquivo Excel selecionado
-export function selecionarTodos() {
-    const selectAll = document.getElementById('select-all');
-    const checkboxes = document.querySelectorAll('#lista-arquivos-excel input[type="checkbox"]');
-
-    console.log("Checkbox Selecionar Todos:", selectAll.checked); // Verifica o estado do checkbox "Selecionar Todos"
-    console.log("Checkboxes encontrados:", checkboxes.length); // Verifica quantos checkboxes foram encontrados
-
-    checkboxes.forEach(checkbox => {
-        checkbox.checked = selectAll.checked;
-        console.log(`Checkbox ${checkbox.id} atualizado para ${checkbox.checked}`); // Verifica o estado atualizado
-    });
-}
-
-
-
+//Função para baixar o relatorio no formato PDF
 export function baixarArquivoExcelSelecionado() {
     // Captura as datas
     const dataInicioInput = document.getElementById('data_inicio_relatorio').value;
@@ -360,7 +430,7 @@ export function baixarArquivoExcelSelecionado() {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'Relatorio de Pagamento.xls'; // Nome sugerido para o download
+        a.download = 'Relatorio de Pagamentos.xls'; // Nome sugerido para o download
         document.body.appendChild(a);
         a.click();
         a.remove();
@@ -373,7 +443,7 @@ export function baixarArquivoExcelSelecionado() {
 }
 
 
-//_______________________Lista de Funcionarios ________________________________
+//---------------------- Listagem de Funcionarios no front -------------------------//
     export async function fetchCargos() {
         try {
             const response = await fetch(`${apiUrl}/api/funcionarios`); 
@@ -512,67 +582,7 @@ export function baixarArquivoExcelSelecionado() {
             });
         }
         
-//__________________________ Gerador de etiquetas ___________________________
 
-  // Função para abrir o modal
-export function abrirModal() { 
-    document.getElementById("modal-gerar-etiqueta").style.display = "flex";
-}
-
-// Função para fechar o modal
-export function fecharModal() {
-    document.getElementById("modal-gerar-etiqueta").style.display = "none";
-}
-
-// Função para gerar a etiqueta
-export function gerarEtiqueta() {
-    const dataInicio = document.getElementById("data-inicio").value;
-    const dataFim = document.getElementById("data-fim").value;
-
-    // Verifica se as datas estão preenchidas
-    if (!dataInicio || !dataFim) {
-        alert("Por favor, preencha as datas de início e fim.");
-        return;
-    }
-
-    // Configuração para envio da requisição ao backend
-    const payload = {
-        data_inicio: dataInicio,
-        data_fim: dataFim
-    };
-
-    fetch(`${apiUrl}/api/gerar-etiquetas`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Erro na resposta da rede');
-        }
-        return response.blob();
-    })
-    .then(blob => {
-        // Baixa o arquivo gerado pelo backend
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'etiquetas.pdf';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(url);
-
-        // Fecha o modal após gerar a etiqueta
-        fecharModal();
-    })
-    .catch(error => {
-        console.error("Erro ao gerar etiqueta:", error);
-        alert("Erro ao gerar etiqueta. Tente novamente.");
-    });
-}
 
 //____________________________ Editar Funcionario  _______________________________________
 
@@ -834,7 +844,7 @@ let nomeFuncionarioSelecionado = null;
 
 
     
-// ____________________________Cadastro para pagamento e imprimir PDF -> Gerador do PDF_____________________
+//-------------------------Cadastro para pagamento e imprimir PDF -> Gerador do PDF ---------------------//
     document.getElementById('gerarDocumentoButton').addEventListener('click', async function(event) {
         event.preventDefault();
     
