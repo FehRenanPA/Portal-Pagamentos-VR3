@@ -57,11 +57,11 @@ class MongoDBHandler:
         """
         try:
             filtro = {}
-            if data_inicio:
-                filtro["data_inicio"] = {"$gte": data_inicio}
-            if data_fim:
-                filtro["data_fim"] = {"$lte": data_fim}
-
+            if data_inicio and data_fim:
+                filtro = {
+                "data_inicio": data_inicio,  # data_inicio do documento deve ser igual a data_inicio fornecida
+                "data_fim": data_fim         # data_fim do documento deve ser igual a data_fim fornecida
+            }
             logger.debug(f"Usando o filtro: {filtro}")
             
             # Busca no banco de dados
