@@ -123,6 +123,10 @@ class Gerar_olerite:
                                            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
                                            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
                                            ('FONTSIZE', (0, 0), (-1, -1), 14)]))
+                                            # Estilo específico para a linha "RECEBI DE JF..."
+                                           ('FONTNAME', (0, 6), (-1, 6), 'Courier-Bold'),  # muda a fonte
+                                           ('FONTSIZE', (0, 6), (-1, 6), 12),              # se quiser mudar o tamanho também
+                                            
         
         elements.append(header_table)
 
