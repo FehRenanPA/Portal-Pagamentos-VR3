@@ -110,7 +110,7 @@ class Gerar_olerite:
             ["", "", ""],
             ["R E C I B O","", f"VALOR: R$ {valor_sub_total_tres:.2f}"],
             ["", "", ""],
-            [f"RECEBI DE VR3 LTDA A QUANTIA DE R$: {total_pagamento['sub_total_tres']:.2f}","",""],
+            [f"RECEBI DE JF COMERCIO E ENGENHARIA LTDA A QUANTIA DE R$: {total_pagamento['sub_total_tres']:.2f}","",""],
 
             ["", "", ""]
             
