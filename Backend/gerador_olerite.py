@@ -104,8 +104,8 @@ class Gerar_olerite:
         
         
         header = [
-            ["VR3 LTDA", "", ""],
-            ["CNPJ: 12.507.345/0001-15", "", ""],
+            ["JF COMERCIO E ENGENHARIA LTDA", "", ""],
+            ["CNPJ: 45.528.735/0001-20", "", ""],
             ["", "", ""],
             ["", "", ""],
             ["R E C I B O","", f"VALOR: R$ {valor_sub_total_tres:.2f}"],
