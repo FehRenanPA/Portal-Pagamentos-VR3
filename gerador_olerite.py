@@ -104,13 +104,13 @@ class Gerar_olerite:
         
         
         header = [
-            ["JF COMERCIO E ENGENHARIA LTDA", "", ""],
+            ["JF COMERCIO E ENGENHARIA LTDA", "", ""],
             ["CNPJ: 45.528.735/0001-20", "", ""],
             ["", "", ""],
             ["", "", ""],
-            ["R E C I B O","", f"VALOR: R$ {valor_sub_total_tres:.2f}"],
+            ["","R E C I B O", f"VALOR: R$ {valor_sub_total_tres:.2f}"],
             ["", "", ""],
-            [f"RECEBI DE JF COMERCIO E ENGENHARIA LTDA LTDA A QUANTIA DE R$: {total_pagamento['sub_total_tres']:.2f}","",""],
+            [f"RECEBI DE JF COMERCIO E ENGENHARIA LTDA LTDA A QUANTIA DE R$: {total_pagamento['sub_total_tres']:.2f}","",""],
 
             ["", "", ""]
             
@@ -118,7 +118,7 @@ class Gerar_olerite:
         ]
         header_table = Table(header)
         header_table.setStyle(TableStyle([('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
-                                           ('ALIGN', (1, 0), (1, 0), 'CENTER'),
+                                           #('ALIGN', (1, 0), (1, 0), 'CENTER'),
                                            #('ALIGN', (5, 0), (5, 0), 'LEFT'), 
                                            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
                                            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
