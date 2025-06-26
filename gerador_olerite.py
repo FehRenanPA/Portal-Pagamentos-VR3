@@ -108,7 +108,7 @@ class Gerar_olerite:
             ["CNPJ: 45.528.735/0001-20", "", ""],
             ["", "", ""],
             ["", "", ""],
-            ["R E C I B O","", f"VALOR: R$ {valor_sub_total_tres:.2f}"],
+            ["R E C I B O","" * 10, f"VALOR: R$ {valor_sub_total_tres:.2f}"],
             ["", "", ""],
             [f"RECEBI DE JF COMERCIO E ENGENHARIA LTDA LTDA A QUANTIA DE R$: {total_pagamento['sub_total_tres']:.2f}","",""],
 
@@ -116,7 +116,7 @@ class Gerar_olerite:
             
             
         ]
-        header_table = Table(header, hAlign='LEFT')
+        header_table = Table(header, hAlign='LEFT', colWidths=[250, 100, 150])
         header_table.setStyle(TableStyle([('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
                                            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
                                            ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
