@@ -118,12 +118,12 @@ class Gerar_olerite:
         ]
         header_table = Table(header)
         header_table.setStyle(TableStyle([('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
-                                           ('ALIGN', (1, 0), (1, 0), 'CENTER'),
+                                           #('ALIGN', (1, 0), (1, 0), 'CENTER'),
+                                           ('ALIGN', (0, 4), (-1, 4), 'CENTER'),
                                            ('ALIGN', (5, 0), (5, 0), 'LEFT'), 
                                            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
                                            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
-                                           ('FONTSIZE', (0, 0), (-1, -1), 12)]))
-                                                                                              
+                                           ('FONTSIZE', (0, 0), (-1, -1), 12)]))              
         elements.append(header_table)
 
     def _prepare_content(self, total_pagamento):
