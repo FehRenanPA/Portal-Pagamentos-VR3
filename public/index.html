@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="./vr3.png">
+    <title>Portal de Pagamentos VR3 LTDA</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- CSS e Estilos -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css"> <!-- Estilo personalizado -->
+
+    <!-- JS de Terceiros -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <!--script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app.js"></script-->
+    <!--script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-auth.js"></script-->
+
+</head>
+<body>
+    <!-- Login Section -->
+    <div id="login-section" style="display: none;">
+        <h4>Login</h4>
+        <p id="error-message" style="color: red;"></p>
+        <input type="email" id="email" placeholder="Digite seu e-mail" required>
+        <input type="password" id="password" placeholder="Digite sua senha" required>
+        <button id="login-btn">Entrar</button>
+    </div>
+
+    <!-- Logout Section -->
+    <div id="logout-section" style="display: none;">
+        <p>Usuário: <span id="user-email"></span>.</p>
+        <button id="logout-btn">Sair</button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tab-buttons">
+        <button onclick="showTab('lista')">Lista de Funcionários</button>
+        <button onclick="showTab('funcionarios')">Cadastro de Funcionários</button>
+        <button onclick="showTab('recibo')">Gerador de Recibo</button>
+    </div>
+
+    <!-- Lista de Funcionários -->
+    <div id="lista" class="tab active">
+        <div class="form-container">
+            <h2>Funcionários Cadastrados</h2>
+            <button class="baixar-excel-botao" onclick="abrirModalExcel()" style="float: right;">Baixar Excel</button>
+            <button class="gerar_etiquetas" onclick="abrirModal()" style="float: right;">Gerar Etiquetas</button>
+            <h3 id="total-registros">Total: 0</h3>
+            <label for="search-funcionario">Busca:</label>
+            <input type="text" id="search-funcionario" name="search-funcionario" placeholder="Buscar por Nome ou CPF" oninput="filterFuncionarios()" style="width: 40%; margin-bottom: 15px; padding: 10px;">
+            <div id="lista-funcionarios">
+                <div id="pagination" class="pagination"></div>
+                <button id="prevPage">Página Anterior</button>
+                <button id="nextPage">Próxima Página</button>
+            </div>
+        </div>
+    </div>
+
+<!-- Modal de Edição -->
+<div id="editModal" class="modal hidden"> <!-- Adicione a classe 'hidden' -->
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Editar Funcionário</h2>
+        <form id="editForm">
+         <input type="hidden" id="_id" name="_id" value=""> <!-- Campo oculto para o ID do funcionário -->
+            <div class="input-row">
+                <div class="form-group">
+                    <label for="nome_funcionario">Nome Funcionário:</label>
+                    <input type="text" id="nome_funcionario" name="nome_funcionario" required>
+                </div> 
+                <div class="form-group">
+                    <label for="nome_funcao">Função:</label>
+                    <input type="text" id="nome_funcao" name="nome_funcao" required placeholder=" Nome do Funcionario">
+                </div>
+            </div>
+            <div class="input-row">
+                <div class="form-group">
+                    <label for="equipe">Equipe:</label>
+                    <input type="text" id="equipe" name="equipe" required placeholder=" Nome da quipe">
+                </div>
+                <div class="form-group">
+                    <label for="numero_cpf">Número CPF:</label>
+                    <input type="text" id="numero_cpf" name="numero_cpf" required maxlength="11" pattern="\d{11}" title="Por favor, insira um CPF válido com 11 dígitos.">
+                </div>
+                <div class="form-group">
+                    <label for="chave_pix">Chave PIX:</label>
+                    <input type="text" id="chave_pix" name="chave_pix" required>
+                </div>
+            </div>
+            <div class="input-row">
+                <div class="form-group">
+                    <label for="valor_hora_base">Valor Hora:</label>
+                    <input type="number" id="valor_hora_base" name="valor_hora_base" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="valor_hora_extra_um">Valor Hora Extra de 50%:</label>
+                    <input type="number" id="valor_hora_extra_um" name="valor_hora_extra_um" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="valor_hora_extra_dois">Valor Hora Extra de 100%:</label>
+                    <input type="number" id="valor_hora_extra_dois" name="valor_hora_extra_dois" step="0.01" required>
+                </div>
+            </div>
+            <div class="input-row">
+                <div class="form-group">
+                    <label for="adicional_noturno">Valor Adicional Noturno:</label>
+                    <input type="number" step="0.01" id="adicional_noturno" name="adicional_noturno" required placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="repouso_remunerado">Val. Repouso Remu.:</label>
+                    <input type="number" step="0.01" id="repouso_remunerado" name="repouso_remunerado" required placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="valor_ferias">Valor de Férias (%):</label>
+                    <input type="number" step="0.01" id="valor_ferias" name="valor_ferias" required placeholder="0.00">
+                </div>
+            </div>
+            <div class="input-row">
+                <div class="form-group">
+                    <label for="valor_um_terco_ferias">Valor do 1/3 Férias (%):</label>
+                    <input type="number" step="0.01" id="valor_um_terco_ferias" name="valor_um_terco_ferias" required placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="valor_decimo_terceiro">Valor do 13º Salário (%):</label>
+                    <input type="number" step="0.01" id="valor_decimo_terceiro" name="valor_decimo_terceiro" required placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="pagamento_fgts">Pagamento de FGTS (%):</label>
+                    <input type="number" step="0.01" id="pagamento_fgts" name="pagamento_fgts" required placeholder="0.00">
+                </div>
+            </div>
+            <div class="input-row">
+                <div class="form-group">
+                    <label for="desconto_inss">Desconto de INSS (%):</label>
+                    <input type="number" step="0.01" id="desconto_inss" name="desconto_inss" required placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="desconto_refeicao">Desconto de Refeição:</label>
+                    <input type="number" step="0.01" id="desconto_refeicao" name="desconto_refeicao" required placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="desconto_transporte">Desconto de Transporte:</label>
+                    <input type="number" step="0.01" id="desconto_transporte" name="desconto_transporte" required placeholder="0.00">
+                </div>
+            </div>
+            <!-- Adicione mais campos conforme necessário -->
+            <input type="submit" value="Salvar">
+        </form>
+    </div>
+</div>
+
+<div id="funcionarios" class="tab active">
+    <div class="form-container">
+        <form id="funcionario-form">
+            <div class="input-row">
+                <div class="form-group">
+                    <label for="nome_funcionario_c">Nome do Funcionario:</label>
+                    <input type="text" id="nome_funcionario_c" name="nome_funcionario_c" required placeholder=" Nome do Funcionario">
+                </div>
+                <div class="form-group">
+                    <label for="numero_cpf_c">Numero CPF:</label>
+                    <input type="text" id="numero_cpf_c"  name="numero_cpf_c"required placeholder="CPF" maxlength="11" pattern="\d{11}" title="Por favor, insira um CPF válido com 11 dígitos." >
+                </div>
+            </div>
+            <div class="input-row">
+                <div class="form-group">
+                    <label for="nome_funcao_c">Função:</label>
+                    <input type="text" id="nome_funcao_c" name="nome_funcao_c" required placeholder="Nome da Funcão">
+                </div>
+                <div class="form-group">
+                    <label for="equipe_c">Equipe:</label>
+                    <input type="text" id="equipe_c" name="equipe_c" required placeholder="Nome da equipe">
+                </div>
+			    <div class="form-group">
+                    <label for="chave_pix_c">Chave PIX:</label>
+                    <input type="text" id="chave_pix_c" name="chave_pix_c" required placeholder="Chave">
+                </div>
+            </div>
+            <div class="input-row">
+                <div class="form-group">
+                    <label for="valor_hora_base_c">Valor Hora:</label>
+                    <input type="number" step="0.01" id="valor_hora_base_c" name="valor_hora_base_c" required placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="valor_hora_extra_um_c">Valor Hora Extra de 50%:</label>
+                    <input type="number" step="0.01" id="valor_hora_extra_um_c" name="valor_hora_extra_um_c" required placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="valor_hora_extra_dois_c">Valor Hora Extra de 100%:</label>
+                    <input type="number" step="0.01" id="valor_hora_extra_dois_c" name="valor_hora_extra_dois_c" required placeholder="0.00">
+                </div>
+            </div>
+            <div class="input-row">
+                <div class="form-group">
+                    <label for="adicional_noturno_c">Valor Adicional Noturno:</label>
+                    <input type="number" step="0.01" id="adicional_noturno_c" name="adicional_noturno_c" required placeholder="0.00">
+                </div>
+			    <div class="form-group">
+                    <label for="repouso_remunerado_c">Val. Repouso Remu.:</label>
+                    <input type="number" step="0.01" id="repouso_remunerado_c" name="repouso_remunerado_c" required placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="valor_ferias_c">Valor de Férias (%):</label>
+                    <input type="number" step="0.01" id="valor_ferias_c" name="valor_ferias_c" required placeholder="0.00">
+                </div>
+            </div>
+            <div class="input-row">
+                <div class="form-group">
+                    <label for="valor_um_terco_ferias_c">Valor do 1/3 Férias (%):</label>
+                    <input type="number" step="0.01" id="valor_um_terco_ferias_c" name="valor_um_terco_ferias_c" required placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="valor_decimo_terceiro_c">Valor do 13º Salário (%):</label>
+                    <input type="number" step="0.01" id="valor_decimo_terceiro_c" name="valor_decimo_terceiro_c" required placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="pagamento_fgts_c">Pagamento de FGTS (%):</label>
+                    <input type="number" step="0.01" id="pagamento_fgts_c" name="pagamento_fgts_c" required placeholder="0.00">
+                </div>
+            </div>
+            <div class="input-row">
+                <div class="form-group">
+                    <label for="desconto_inss_c">Desconto de INSS (%):</label>
+                    <input type="number" step="0.01" id="desconto_inss_c" name="desconto_inss_c" required placeholder="0.00">
+                </div>
+			    <div class="form-group">
+                    <label for="desconto_refeicao_c">Desconto de Refeição:</label>
+                    <input type="number" step="0.01" id="desconto_refeicao_c" name="desconto_refeicao_c" required placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="desconto_transporte_C">Desconto de Transporte :</label>
+                    <input type="number" step="0.01" id="desconto_transporte_c" name="desconto_transporte_c" required placeholder="0.00">
+                </div>
+            </div>   
+            <input type="submit" value="Cadastrar Funcionario">
+        </form>
+    </div>
+</div>
+    
+<div id="recibo" class="tab">
+    <div class="form-container">
+        <form id="recibo-form">
+            <div class="input-row">
+                <div class="form-group">
+                    <label for="data_inicio">Data Inicio:</label>
+                    <input type="date" id="data_inicio" name="data_inicio" required placeholder="EX: dd/mm/aaaa">
+                </div>
+                <div class="form-group">    
+                    <label for="data_fim">Data Fim:</label>
+                    <input type="date" id="data_fim" name="data_fim" required placeholder="EX: dd/mm/aaaa">
+                </div>
+                <div class="form-group">    
+                    <label for="data_pagamento">Data de Pagamento:</label>
+                    <input type="date" id="data_pagamento" name="data_pagamento" required placeholder="EX: dd/mm/aaaa">
+                </div>
+            </div>
+            <div class="input-row">
+                <div class="form-group">
+                    <label for="name_funcionario">Nome do Funcionário:</label>
+                    <select id="name_funcionario" name="name_funcionario" style="width: 105%;" required>
+                    <option value="" disabled selected>Selecione um funcionário</option>
+                     <!-- Funcionarios serão preenchidos aqui -->
+                    <option value="ID_DO_FUNCIONARIO">NOME_DO_FUNCIONARIO</option>
+                     <!-- Adicione aqui as opções dinâmicas com os funcionários -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="nome_cargo">Nome do Cargo:</label>
+                    <input type="text" id="nome_cargo" name="nome_cargo" required/> <!-- readonly para impedir edição manual -->
+                </div>
+            </div>
+            <div class="input-row">
+                <div class="form-group">
+                    <label for="horas_trabalhadas">Horas Trabalhadas:</label>
+                    <input type="number" step="0.01"  id="horas_trabalhadas" name="horas_trabalhadas" required placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="horas_extras_um">Horas Extras  50%:</label>
+                    <input type="number" step="0.01"  id="horas_extras_um" name="horas_extras_um" required placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="horas_extras_dois">Horas Extras de 100%:</label>
+                    <input type="number" step="0.01"  id="horas_extras_dois" name="horas_extras_dois" required placeholder="0.00">
+                </div>
+            </div>
+            <div class="input-row">
+                <div class="form-group">
+                    <label for="horas_noturnas">Horas Noturnas:</label>
+                    <input type="number" step="0.01"  id="horas_noturnas" name="horas_noturnas" required placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="valor_diarias">Valor Calculado em Diarias**:</label>
+                    <input type="number" step="0.01"  id="valor_diarias" name="valor_diarias" required placeholder="0.00 (Não Obrigatorio)">
+                </div>
+                <div class="form-group">
+                    <label for="correcao_positiva">Valor Correção (+):</label>
+                    <input type="number" step="0.01"  id="correcao_positiva" name="correcao_positiva" required placeholder="0.00">
+                </div>
+            </div>
+            <div class="input-row">
+                <div class="form-group">
+                    <label for="correcao_negativa"> Valor Correção (-):</label>
+                    <input type="number" step="0.01" id="correcao_negativa" name="correcao_negativa" required placeholder="0.00">  
+                </div>
+                <div class="form-group">
+                    <label for="parcela_vale"> Parc. Adiant. de Salario (-):</label>
+                    <input type="number" step="0.01" id="parcela_vale" name="parcela_vale" required placeholder="0.00">  
+                </div>
+                <div class="form-group">
+                    <label for="diferenca_calculo"> Dif. de Cal. Sema. Anterior (+):</label>
+                    <input type="number" step="0.01" id="diferenca_calculo" name="diferenca_calculo" required placeholder="0.00">  
+                </div>
+            </div>
+            <button type="button" id="gerarDocumentoButton">Gerar Documento</button> 
+            <div id="error-message" style="color: red; display: none;"></div>
+        </form>
+    </div>
+</div>
+    
+            <!-- PUP UP para pre visualização -->
+        <div class="modal" id="documentPreviewModal" tabindex="-1" aria-labelledby="documentPreviewModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg-custom">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="documentPreviewModalLabel">Prévia do Documento</h5>
+                    </div>
+                    <div class="modal-body">
+                        <pre id="documentContentPreview"></pre> <!-- Prévia do documento -->
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" id="printDocumentButton" class="btn btn-primary">Gerar PDF</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+<!-- Modal para Gerar Etiquetas -->
+<div id="modal-gerar-etiqueta" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
+    <div style="background-color: white; padding: 20px; border-radius: 10px; max-width: 700px; width: 900%; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+        <h2 style="text-align: center;">Gerar Etiquetas</h2>
+        <div class="input-row" style="margin-bottom: 20px;">
+            <div class="form-group">
+                <label for="data-inicio">Data Início:</label>
+                <input type="date" id="data-inicio" name="data-inicio" required><br><br>
+            </div>
+            <div class="form-group">
+                <label for="data-fim">Data Fim:</label>
+                <input type="date" id="data-fim" name="data-fim" required><br><br>
+            </div>
+        </div>
+        
+        <div style="display: flex; justify-content: flex-start; margin-top: 20px;">
+            <button onclick="fecharModal()" style="background-color: red; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-right: 10px;">Cancelar</button>
+            <button onclick="gerarEtiqueta()" style="background-color: blue; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Criar</button>
+        </div>
+    </div>
+</div>
+<!-- Modal para Baixar Excel -->
+<div id="modal-excel" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
+    <div style="background-color: white; padding: 20px; border-radius: 5px; max-width: 1000px; width: 100%; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+        <h2 style="text-align: center;">Baixar Relatório</h2>
+        <!-- Campo de seleção de data -->
+        <div class="input-row">
+            <div class="form-group">
+                <label for="data_inicio_relatorio">Data Início:</label>
+                <input type="date" id="data_inicio_relatorio" name="data_inicio_relatorio" required placeholder="EX: dd/mm/aaaa">
+            </div>
+            <div class="form-group">    
+                <label for="data_fim_relatorio">Data Fim:</label>
+                <input type="date" id="data_fim_relatorio" name="data_fim_relatorio" required placeholder="EX: dd/mm/aaaa">
+            </div>
+        </div>   
+ 
+        <!-- Multi-select com checkboxes -->
+        <div id="opcoes-baixar-excell" style="display:none; margin-top: 20px; display: flex; justify-content: flex-start;">
+            <button onclick="pesquisarEquipes()" style="background-color: rgb(87, 100, 224); color: white; border: none; padding: 7px 15px; border-radius: 5px; cursor: pointer; margin-right: 10px;">Pesquisar</button>
+        </div>
+        <div class="form-group" style="margin-top: 5px;">
+            <label>Selecione:</label>
+             <!-- "Selecionar Todos" -->
+            <div id="select-all-container">
+                <label for="select-all"><b>Todos:</b></label> 
+                <input type="checkbox" id="select-all" onclick="selecionarTodos()">   
+            </div>
+            <div id="lista-arquivos-excel">
+                <!-- Checkboxes dinâmicos -->
+                <div class="checkbox-row">
+                    <input type="checkbox" class="item-checkbox" id="checkbox1">
+                    <label for="checkbox1"></label>
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" class="item-checkbox" id="checkbox2">
+                    <label for="checkbox2"></label>
+                </div>
+            </div>
+            
+        </div>
+
+        <!-- Botões "Baixar" e "Cancelar" -->
+        <div id="opcoes-baixar-excel" style="display:none; margin-top: 20px; display: flex; justify-content: flex-start;">
+            <button onclick="baixarArquivoExcelSelecionado()" style="background-color: blue; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-right: 10px;">Baixar</button>
+            <button onclick="fecharModalExcel()" style="background-color: red; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+
+
+
+<body>
+    <script type="module"> 
+    import { selecionarTodos, fetchCargos, gerarEtiqueta, abrirModalExcel, abrirModal , pesquisarEquipes, fecharModal, fecharModalExcel, 
+        carregarCheckboxes,  capturarArquivosSelecionados, baixarArquivoExcelSelecionado, filterFuncionarios , showTab } from './script.js';  
+    // Adiciona os event listeners após o DOM estar carregado
+    window.selecionarTodos=selecionarTodos;
+    window.fetchCargos = fetchCargos;
+    window.abrirModalExcel = abrirModalExcel;
+    window.pesquisarEquipes = pesquisarEquipes;
+    window.abrirModal = abrirModal;
+    window.fecharModal = fecharModal;
+    window.gerarEtiqueta = gerarEtiqueta;
+    window.fecharModalExcel = fecharModalExcel;
+    window.carregarCheckboxes = carregarCheckboxes;
+    window.capturarArquivosSelecionados = capturarArquivosSelecionados;
+    window.baixarArquivoExcelSelecionado = baixarArquivoExcelSelecionado;
+    window.filterFuncionarios =  filterFuncionarios;
+    window.showTab = showTab;
+    </script>
+
+    <!--script type="module" src="script.js"defer></script-->
+    <!-- Script Principal -->
+    <script type="module" src="app.js" defer></script>
+    <!--script src="script.js"></script-->
+    
+    
+</body>
+</html>
