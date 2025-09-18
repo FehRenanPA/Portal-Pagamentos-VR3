@@ -57,10 +57,18 @@ class MongoDBHandler:
         """
         try:
             filtro = {}
+<<<<<<< HEAD
             if data_inicio:
                 filtro["data_inicio"] = {"$gte": data_inicio}
             if data_fim:
                 filtro["data_fim"] = {"$lte": data_fim}
+=======
+            if data_inicio and data_fim:
+                filtro = {
+                "data_inicio": data_inicio,  # data_inicio do documento deve ser igual a data_inicio fornecida
+                "data_fim": data_fim         # data_fim do documento deve ser igual a data_fim fornecida
+            }
+>>>>>>> b2341e7889e447dffaa274c107459a9a67c2cca6
 
             logger.debug(f"Usando o filtro: {filtro}")
             
@@ -85,9 +93,15 @@ class MongoDBHandler:
             if equipes:
                 filtro["equipe"] = {"$in": equipes}
             if data_inicio:
+<<<<<<< HEAD
                 filtro["data_inicio"] = {"$gte": data_inicio}
             if data_fim:
                 filtro["data_fim"] = {"$lte": data_fim}
+=======
+                filtro["data_inicio"] = data_inicio
+            if data_fim:
+                filtro["data_fim"] = data_fim
+>>>>>>> b2341e7889e447dffaa274c107459a9a67c2cca6
 
             logger.debug(f"Usando o filtro: {filtro}")
 

@@ -42,7 +42,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-    
 cred_path = {
     "type": "service_account",
     "project_id": os.getenv('FIREBASE_PROJECT_ID'),
@@ -56,7 +55,6 @@ cred_path = {
     "client_x509_cert_url": os.getenv('FIREBASE_CLIENT_X509_CERT_URL'),
     "universe_domain": os.getenv('FIREBASE_UNIVERSE_DOMAIN')
 }    
-print(cred_path)
 
 cred = credentials.Certificate(cred_path) 
 print(f"Service Account Email: {cred.service_account_email}")  
@@ -68,9 +66,7 @@ app = Flask(__name__)
 # Habilitarr CORS
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-
-MONGO_URI = os.getenv('MONGO_URI') 
-
+MONGO_URI = os.getenv('MONGO_URI')
 
 if not MONGO_URI:
     logger.error("A configuração MONGO_URI não foi definida no Firebase Functions ou no arquivo .env!")
@@ -80,6 +76,15 @@ client = MongoClient(MONGO_URI)
 db = client['FUNCIONARIOS_VR3_PAGAMENTOS']
 colecao = db['funcionario']
 
+<<<<<<< HEAD
+=======
+            
+#--------------------------- Credenciais Mongo -> pagamentos_periodo --------------------------------------------------------
+
+db_handler = MongoDBHandler(database_name="FUNCIONARIOS_VR3_PAGAMENTOS", collection_name="pagamentos_periodo")
+
+#--------------------------- Controle de acesso do front no firebase --------------------------------------------------------
+>>>>>>> b2341e7889e447dffaa274c107459a9a67c2cca6
 
 def gerar_custom_token(uid):
     try:
@@ -168,10 +173,18 @@ def get_all_funcionarios():
     funcionarios = CriarFuncionario.carregar_funcionarios()
     return jsonify(funcionarios), 200  # jsonify aplicado aqui, dentro da rota
  
+<<<<<<< HEAD
 
 
     
 ####--------------Retorna O funcioanriod e acordo com o ID--------------#####
+=======
+                             
+                             ## APIS USADAS PELO FRONT ##
+
+    
+#---------------------------  Retorna O funcioanriod e acordo com o ID---------------------------------#
+>>>>>>> b2341e7889e447dffaa274c107459a9a67c2cca6
 @app.route('/api/funcionarios/<string:funcionario_id>', methods=['GET'])
 def get_funcionario_por_id(funcionario_id):
     """Retorna um único funcionário com base no ID."""
@@ -187,11 +200,15 @@ def get_funcionario_por_id(funcionario_id):
     
     
 
+<<<<<<< HEAD
             ######## Preparativos para o Relatorio #########
 #---------------- Instancia o manipulador do MongoDB ----------------------------
 db_handler = MongoDBHandler(database_name="FUNCIONARIOS_VR3_PAGAMENTOS", collection_name="pagamentos_periodo")
 
 #-------------- Converste o retorno do mongo para string ----------------------
+=======
+#----------------------- Converste o retorno do mongo para string -----------------------------#
+>>>>>>> b2341e7889e447dffaa274c107459a9a67c2cca6
 def serialize_document(doc):
     """
     Converte um documento MongoDB para um formato serializável pelo JSON.
@@ -257,9 +274,13 @@ else:
 
 
 ###-----------------Busca dados para gerar o Relatorio/Excell com dados do Mongo--------------------------#####
+<<<<<<< HEAD
 
                    # Listagem geral 
 
+=======
+                   # Listagem geral 
+>>>>>>> b2341e7889e447dffaa274c107459a9a67c2cca6
 @app.route('/api/listar_documentos', methods=['GET'])
 def listar_documentos():
     try:
@@ -329,7 +350,12 @@ def relatorio_periodo():
         logger.error(f"Erro inesperado: {e}", exc_info=True)
         return jsonify({"erro": "Erro inesperado ao processar a requisição"}), 500
     
+<<<<<<< HEAD
 ##------------ Gerar Relatorio -------------------    
+=======
+    
+##------------------------------- Gerar Relatorio ----------------------------------#  
+>>>>>>> b2341e7889e447dffaa274c107459a9a67c2cca6
 @app.route('/api/gerar_relatorio', methods=['POST'])
 def gerar_relatorio():
     try:
@@ -448,7 +474,11 @@ def gerar_etiquetas():
 
 
 
+<<<<<<< HEAD
 ##----------------------------------> API de Funcionarios <-----------------------------------##
+=======
+##----------------------------------> API que retorna dados dos Funcionarios <-----------------------------------##
+>>>>>>> b2341e7889e447dffaa274c107459a9a67c2cca6
 
 @app.route('/api/funcionarios', methods=['GET', 'POST'])
 def funcionarios():
@@ -769,9 +799,12 @@ def list_routes():
     routes = [{"endpoint": rule.endpoint, "rule": rule.rule} for rule in app.url_map.iter_rules()]
     return jsonify(routes)
 
+<<<<<<< HEAD
 #if __name__ == "__main__":
     #port = int(os.environ.get("PORT", 5000))
     #app.run(host="0.0.0.0", port=port)
+=======
+>>>>>>> b2341e7889e447dffaa274c107459a9a67c2cca6
 
 #f __name__ == "__main__":                       
  #  app.run(debug=True, port=5000)

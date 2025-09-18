@@ -55,7 +55,11 @@ pycparser==2.22
 pycryptodome==3.21.0
 PyJWT==2.10.1
 pymongo==4.10.1
+<<<<<<< HEAD
 pyparsing==3.2.0
+=======
+pyparsing==3.2.0    
+>>>>>>> b2341e7889e447dffaa274c107459a9a67c2cca6
 Pyrebase4==4.8.0
 python-docx==1.1.2
 python-dotenv==1.0.1

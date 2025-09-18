@@ -2,7 +2,7 @@
 import { auth } from "./firebase-config.js"; // Importa a instância de auth já inicializada
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
-// Elementos da interface
+
 const loginSection = document.getElementById("login-section");
 const logoutSection = document.getElementById("logout-section");
 const tabsSection = document.getElementById("tabs-section");
@@ -16,6 +16,7 @@ const funcionarios = document.getElementById('funcionarios');
 
 // Controle de redirecionamento
 //let hasCheckedAuth = false;
+
 
 // Função para exibir a seção de login
 export function showLoginSection() {
@@ -104,8 +105,6 @@ if (loginButton) {
 
 
 
-
-
 // Mostra erros no login
 function mostrarErroLogin(error) {
     if (error.code === "auth/user-not-found") {
@@ -140,18 +139,21 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
+
 // URL BASE
 const apiUrl = "https://salty-reaches-80572-1ddaab341ce6.herokuapp.com"; 
 //const apiUrl="http://127.0.0.1:5000";
 // Teste no console
 console.log(apiUrl);
 
+ b2341e7889e447dffaa274c107459a9a67c2cca6
 // Inicializa a interface com base no estado de autenticação
 window.onload = function() {
     showLoginSection(); // Exibe a seção de login ao carregar a página
 };
 
 //___________________Baixar Excell_________________________________________ 
+
 
 export function carregarCheckboxes(opcoes) {
     const container = document.getElementById('lista-arquivos-excel');
@@ -205,12 +207,14 @@ export function capturarArquivosSelecionados() {
     }
 }
 
+
 // Função para fechar o modal
 export function fecharModalExcel() {
     document.getElementById("modal-excel").style.display = "none";
 }
  
 // Função para formatar a data no formato "dd/mm/yy"
+
 function formatarData(data) {
     const partes = data.split('-'); // Divide a data no formato "yyyy-mm-dd"
     const ano = partes[0].slice(-2); // Obtém os últimos dois dígitos do ano
@@ -218,6 +222,7 @@ function formatarData(data) {
     const dia = partes[2];
     return `${dia}/${mes}/${ano}`; // Retorna no formato "dd/mm/yy"
 }
+
 
 export function abrirModalExcel() {
     // Apenas exibe o modal, sem fazer requisição inicial à API
@@ -360,7 +365,9 @@ export function baixarArquivoExcelSelecionado() {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
+
         a.download = 'Relatorio de Pagamento.xls'; // Nome sugerido para o download
+
         document.body.appendChild(a);
         a.click();
         a.remove();
@@ -373,7 +380,10 @@ export function baixarArquivoExcelSelecionado() {
 }
 
 
+
 //_______________________Lista de Funcionarios ________________________________
+
+
     export async function fetchCargos() {
         try {
             const response = await fetch(`${apiUrl}/api/funcionarios`); 
@@ -512,6 +522,7 @@ export function baixarArquivoExcelSelecionado() {
             });
         }
         
+
 //__________________________ Gerador de etiquetas ___________________________
 
   // Função para abrir o modal
@@ -834,7 +845,9 @@ let nomeFuncionarioSelecionado = null;
 
 
     
+
 // ____________________________Cadastro para pagamento e imprimir PDF -> Gerador do PDF_____________________
+
     document.getElementById('gerarDocumentoButton').addEventListener('click', async function(event) {
         event.preventDefault();
     
