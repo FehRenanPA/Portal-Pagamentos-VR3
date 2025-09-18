@@ -140,13 +140,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-// URL BASE
-const apiUrl = "https://salty-reaches-80572-1ddaab341ce6.herokuapp.com"; 
-//const apiUrl="http://127.0.0.1:5000";
+// URL BASEF
+//const apiUrl = "https://salty-reaches-80572-1ddaab341ce6.herokuapp.com"; 
+const apiUrl="http://127.0.0.1:5000";
 // Teste no console
 console.log(apiUrl);
 
- b2341e7889e447dffaa274c107459a9a67c2cca6
 // Inicializa a interface com base no estado de autenticação
 window.onload = function() {
     showLoginSection(); // Exibe a seção de login ao carregar a página

@@ -102,7 +102,7 @@ class Gerar_olerite:
         valor_sub_total_tres = total_pagamento.get('sub_total_tres')
       
         
-        
+
         header = [
             ["JF COMERCIO E ENGENHARIA LTDA", "", ""],
             ["CNPJ: 45.528.735/0001-20", "", ""],
@@ -110,17 +110,14 @@ class Gerar_olerite:
             ["", "", ""],
             ["R E C I B O","" * 10, f"VALOR: R$ {valor_sub_total_tres:.2f}"],
             ["", "", ""],
-<<<<<<< HEAD
+
             [f"RECEBI DE JF COMERCIO E ENGENHARIA LTDA A QUANTIA DE R$: {total_pagamento['sub_total_tres']:.2f}","",""],
-=======
-            [f"RECEBI DE JF COMERCIO E ENGENHARIA LTDA LTDA A QUANTIA DE R$: {total_pagamento['sub_total_tres']:.2f}","",""],
->>>>>>> b2341e7889e447dffaa274c107459a9a67c2cca6
 
             ["", "", ""]
             
             
         ]
-<<<<<<< HEAD
+
 
         header_table = Table(header, hAlign='LEFT', colWidths=[250, 100, 150])
         header_table.setStyle(TableStyle([('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
@@ -130,15 +127,7 @@ class Gerar_olerite:
                                            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
                                            ('FONTSIZE', (0, 0), (-1, -1), 14)]))
         
-=======
-        header_table = Table(header, hAlign='LEFT', colWidths=[250, 100, 150])
-        header_table.setStyle(TableStyle([('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
-                                           ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-                                           ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
-                                           #('ALIGN', (0, 4), (-1, 4), 'CENTER'),                                           
-                                           ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
-                                           ('FONTSIZE', (0, 0), (-1, -1), 12)]))              
->>>>>>> b2341e7889e447dffaa274c107459a9a67c2cca6
+
         elements.append(header_table)
 
     def _prepare_content(self, total_pagamento):
