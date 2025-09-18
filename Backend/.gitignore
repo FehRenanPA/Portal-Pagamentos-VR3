@@ -26,3 +26,6 @@ yarn-error.log*
 *.env
 *.cfg
 venv/
+.venv/
+__pycache__/
+*.pyc

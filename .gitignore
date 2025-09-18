@@ -28,3 +28,6 @@ yarn-error.log*
 venv/
 Backend/serviceAccountKey.json
 Backend/firebase_credentials.json   
+.venv/
+__pycache__/
+*.pyc
