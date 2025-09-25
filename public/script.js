@@ -141,7 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-// URL BASEF
+// URL BASE da API
 const apiUrl = "https://salty-reaches-80572-1ddaab341ce6.herokuapp.com"; 
 //const apiUrl="http://127.0.0.1:5000";
 // Teste no console

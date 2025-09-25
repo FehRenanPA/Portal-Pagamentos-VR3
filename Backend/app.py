@@ -337,44 +337,8 @@ else:
 
                    # Listagem geral 
 
-@app.route('/api/listar_documentos', methods=['GET'])
-def listar_documentos():
-    try:
-        # Obtém os parâmetros de data do front-end
-        data_inicio = request.args.get('data_inicio')
-        data_fim = request.args.get('data_fim')
+from datetime import datetime
 
-        # Validação dos parâmetros obrigatórios
-        if not data_inicio or not data_fim:
-            logger.warning("Parâmetros obrigatórios ausentes.")
-            return jsonify({"erro": "Os parâmetros 'data_inicio' e 'data_fim' são obrigatórios."}), 400
-
-        logger.info(f"Recebendo solicitação para listar documentos entre {data_inicio} e {data_fim}.")
-
-        # Busca os documentos com base no intervalo de datas
-        try:
-            documentos = db_handler.buscar_dado(data_inicio=data_inicio, data_fim=data_fim)
-        except Exception as e:
-            logger.error(f"Erro ao buscar documentos no banco de dados: {e}", exc_info=True)
-            return jsonify({"erro": "Erro ao buscar documentos no banco de dados."}), 500
-
-        if not documentos:
-            logger.info(f"Nenhum documento encontrado entre {data_inicio} e {data_fim}.")
-            return jsonify({"mensagem": "Nenhum documento encontrado para o intervalo especificado."}), 404
-
-        # Serializa os documentos encontrados
-        documentos_serializados = [serialize_document(doc) for doc in documentos]
-
-        logger.info(f"Documentos encontrados: {len(documentos_serializados)} documentos.")
-        return jsonify(documentos_serializados), 200
-
-    except Exception as e:
-        logger.error(f"Erro inesperado ao listar documentos: {e}", exc_info=True)
-        return jsonify({"erro": "Erro inesperado ao listar documentos"}), 500
-
-    
-
-#-------- Listagem Especifica e gerar arquivo excell
 @app.route('/api/relatorio_periodo', methods=['POST'])
 def relatorio_periodo():
     try:
@@ -390,13 +354,21 @@ def relatorio_periodo():
         if not data_inicio or not data_fim:
             return jsonify({"erro": "É necessário enviar as datas de início e fim."}), 400
 
-        # validação e conversão das datas
-        formato = "%d-%m-%Y"
+        # função para tentar vários formatos de data
+        def parse_data(data_str):
+            for fmt in ("%d-%m-%Y", "%d/%m/%Y", "%d-%m-%y", "%d/%m/%y"):
+                try:
+                    return datetime.strptime(data_str, fmt)
+                except ValueError:
+                    continue
+            raise ValueError(f"Data inválida: {data_str}")
+
+        # conversão das datas
         try:
-            dt_inicio = datetime.strptime(data_inicio, formato)
-            dt_fim = datetime.strptime(data_fim, formato)
-        except ValueError:
-            return jsonify({"erro": "Datas inválidas. Use o formato DD-MM-YYYY."}), 400
+            dt_inicio = parse_data(data_inicio)
+            dt_fim = parse_data(data_fim)
+        except ValueError as ve:
+            return jsonify({"erro": str(ve)}), 400
 
         if dt_inicio > dt_fim:
             return jsonify({"erro": "A data de início não pode ser maior que a data de fim."}), 400
@@ -408,7 +380,7 @@ def relatorio_periodo():
         documentos_filtrados = []
         for doc in documentos:
             try:
-                data_doc = datetime.strptime(doc["data"], formato)
+                data_doc = parse_data(doc["data"])
                 if dt_inicio <= data_doc <= dt_fim:
                     documentos_filtrados.append(serialize_document(doc))
             except Exception:
@@ -422,6 +394,40 @@ def relatorio_periodo():
     except Exception as e:
         logger.error(f"Erro inesperado: {e}", exc_info=True)
         return jsonify({"erro": "Erro inesperado ao processar a requisição"}), 500
+    
+
+#-------- Listagem Especifica e gerar arquivo excell
+@app.route('/api/relatorio_periodo', methods=['POST'])
+def relatorio_periodo():
+    try:
+        data = request.get_json()
+         # Log para ver o JSON recebido
+        logger.info(f"Requisição recebida: {data}")
+
+        # Recebe a lista de equipes (pode ser uma lista de uma ou mais equipes)
+        equipes = data.get("equipe")
+        data_inicio = data.get("data_inicio")
+        data_fim = data.get("data_fim")
+
+        # Validação dos parâmetros
+        if not equipes or not isinstance(equipes, list) or not all(isinstance(equipe, str) for equipe in equipes):
+            return jsonify({"erro": "É necessário enviar uma lista de equipes, onde cada item é uma string."}), 400
+
+        if not data_inicio or not data_fim:
+            return jsonify({"erro": "É necessário enviar as datas de início e fim."}), 400
+
+        documentos = db_handler.buscar_por_filtro(data_inicio=data_inicio, data_fim=data_fim, equipes=equipes)
+
+        if documentos:
+            # Serializa os documentos encontrados
+            documentos_list = [serialize_document(doc) for doc in documentos]
+            return jsonify(documentos_list), 200
+        else:
+            return jsonify({"message": "Nenhum documento encontrado para o filtro fornecido. Selecione um periodo valido"}), 404
+
+    except Exception as e:
+        logger.error(f"Erro inesperado: {e}", exc_info=True)
+        return jsonify({"erro": "Erro inesperado ao processar a requisição. Acione o administrador"}), 500
 
 ##------------ Gerar Relatorio -------------------    
 @app.route('/api/gerar_relatorio', methods=['POST'])
