@@ -391,12 +391,12 @@ def relatorio_periodo():
             return jsonify({"erro": "É necessário enviar as datas de início e fim."}), 400
 
         # validação e conversão das datas
-        formato = "%Y-%m-%d"
+        formato = "%d-%m-%Y"
         try:
             dt_inicio = datetime.strptime(data_inicio, formato)
             dt_fim = datetime.strptime(data_fim, formato)
         except ValueError:
-            return jsonify({"erro": "Datas inválidas. Use o formato YYYY-MM-DD."}), 400
+            return jsonify({"erro": "Datas inválidas. Use o formato DD-MM-YYYY."}), 400
 
         if dt_inicio > dt_fim:
             return jsonify({"erro": "A data de início não pode ser maior que a data de fim."}), 400
