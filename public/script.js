@@ -42,6 +42,7 @@ export function showTab(tabName) {
     lista.style.display = 'none';
     funcionarios.style.display = 'none';
     recibo.style.display = 'none';
+    reembolso.style.display = 'none';
 
     const tabs = document.querySelectorAll('.tab');
     tabs.forEach(t => {
@@ -141,8 +142,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 // URL BASEF
-//const apiUrl = "https://salty-reaches-80572-1ddaab341ce6.herokuapp.com"; 
-const apiUrl="http://127.0.0.1:5000";
+const apiUrl = "https://salty-reaches-80572-1ddaab341ce6.herokuapp.com"; 
+//const apiUrl="http://127.0.0.1:5000";
 // Teste no console
 console.log(apiUrl);
 
@@ -254,7 +255,7 @@ export function pesquisarEquipes() {
     })
     .catch(error => {
         console.error("Erro ao buscar equipes:", error);
-        alert("Erro ao buscar equipes. Tente novamente.");
+        alert("Erro ao buscar equipes para o periodo. Acione o administrador: " + error.message);
     });
 }
 
@@ -1054,3 +1055,302 @@ let nomeFuncionarioSelecionado = null;
         }
         
             });
+
+//__________________________ Select para a criação do recibo de Reembolso. ___________________________  
+let funcionarioChaveReembolso = null;
+let nomeFuncionarioSelecionadoReembolso = null;
+
+ $(document).ready(function () {
+    // Inicialização do Select2 no campo de seleção
+    $('#name_funcionario_reembolso').select2({
+        placeholder: "Selecione um funcionário",
+        allowClear: true,
+        width: 'resolve',
+        tags: true
+    });
+
+    // Função para carregar a lista de funcionários e preencher o dropdown
+    async function loadFuncionariosReembolso() {
+        try {
+            const response = await fetch(`${apiUrl}/api/reembolsos`);
+            const funcionariosReembolso = await response.json();
+
+            const selectElement = document.getElementById('name_funcionario_reembolso');
+            selectElement.innerHTML = ''; // Limpa as opções atuais
+
+            // Adiciona a opção padrão
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = 'Selecione um funcionário';
+            selectElement.appendChild(defaultOption);
+
+            // Itera sobre os funcionários e cria as opções do dropdown
+            for (const id in funcionariosReembolso) {
+                const funcionario = funcionariosReembolso[id];
+                if (funcionario.nome_funcionario) {
+                    const option = document.createElement('option');
+                    option.value = funcionario._id; // Define o UID (_id) como valor
+                    option.textContent = funcionario.nome_funcionario; // Define o nome do funcionário como texto
+                    option.dataset.nomeFuncao = funcionario.nome_funcao || ''; // Define o nome da função como atributo data
+                    option.dataset.nomeEmpresa = funcionario.empresa || '';
+                    selectElement.appendChild(option); // Adiciona a opção ao dropdown
+                } else {
+                    console.warn(`Funcionário sem nome: ${uid}`);
+                }
+            }
+        } catch (error) {
+            console.error("Erro ao carregar funcionários:", error);
+        }
+    }
+
+    // Evento para preencher os campos quando um funcionário é selecionado
+    $('#name_funcionario_reembolso').on('change', (event) => {
+        const selectedOption = event.target.options[event.target.selectedIndex];
+
+        // Verifica se há uma opção selecionada
+        if (selectedOption) {
+            console.log(`Funcionário selecionado: ${selectedOption.textContent}`);
+            console.log(`Chave selecionada: ${selectedOption.value}`);
+            console.log(`Nome da função: ${selectedOption.dataset.nomeFuncao}`);
+            console.log(`Nome da empresa: ${selectedOption.dataset.nomeEmpresa}`);
+
+            // Preenche o campo 'name_funcionario' com o nome do funcionário
+            document.getElementById('name_funcionario_reembolso').value = selectedOption.textContent;
+
+            // Preenche o campo 'nome_cargo' com o valor armazenado no data-attribute
+            document.getElementById('nome_cargo_reembolso').value = selectedOption.dataset.nomeFuncao || ''; 
+            // Preenche o campo 'nome_cargo' com o valor armazenado no data-attribute
+            document.getElementById('empresa').value = selectedOption.dataset.nomeEmpresa || ''; 
+
+            // Salva a chave do funcionário e outros dados na variável
+            funcionarioChaveReembolso = selectedOption.value;    
+            nomeFuncionarioSelecionadoReembolso = selectedOption.value;
+            const nomeCargoSelecionado = selectedOption.dataset.nomeFuncao;
+
+            console.log(`Chave do funcionário salva: ${funcionarioChaveReembolso}`);
+            console.log(`Nome do funcionário salvo: ${nomeFuncionarioSelecionadoReembolso}`);
+            console.log(`Cargo salvo: ${nomeCargoSelecionado}`);
+        } else {
+            console.warn("Nenhuma opção válida selecionada.");
+        }
+    });
+
+    // Carrega a lista de funcionários ao carregar a página
+    loadFuncionariosReembolso();
+});
+
+
+    
+
+// ____________________________Cadastro para pagamento e imprimir PDF de reembolso-> Gerador do PDF_____________________
+
+    document.getElementById('gerarReciboButtonReembolso').addEventListener('click', async function(event) {
+        event.preventDefault();
+    
+        const formData = new FormData(document.getElementById('reembolso-form'));
+        const reciboData = Object.fromEntries(formData);
+        
+    
+        // Obter o campo select que contém os funcionários
+        const funcionarioSelectReembolso = document.getElementById('name_funcionario_reembolso');
+    
+        // Verifica se o select existe antes de tentar acessar o valor
+        if (!funcionarioSelectReembolso) {
+            console.error('Elemento select com id "name_funcionario_reembolso" não encontrado.');
+            return;
+        }
+
+        const reembolsoId= funcionarioChaveReembolso || funcionarioSelectReembolso.value;
+
+        // Verifica se um funcionário foi selecionado
+        if (!reembolsoId) {
+           console.error('Por favor, selecione um funcionário.');
+            return;
+        }
+    
+        // Continue com o processamento do formulário...
+        console.log('Funcionário selecionado agora  foi e será:', reembolsoId);
+
+
+        // Fetch para obter os dados do cargo
+        const funcionarioResponse = await fetch(`${apiUrl}/api/reembolsos/${reembolsoId}`);
+        if (!funcionarioResponse.ok) {
+        console.error('Erro ao buscar dados funcionario:', funcionarioResponse.statusText);
+        alert("Aconteceu um erro. Acione o Administrador!!")
+        return;
+        }
+        const funcionario = await funcionarioResponse.json();
+        console.log('Funcionário encontrado:', funcionario);
+
+        //Definir um valor default em caso de valor zerado ou null
+        const checkAndParse = (value) => {  
+        const parsedValue = parseFloat(value);
+        return isNaN(parsedValue) ? 0.00 : parsedValue;
+        };
+
+        // Função para formatar data para DD-MM-YYYY
+        const formatDate = (dateString) => {
+        const [year, month, day] = dateString.split('-');
+        return `${day}-${month}-${year}`; // Formato DD/MM/YYYY
+        };
+        function checkAndParseString(value, defaultValue = "") {
+            if (typeof value === "string") {
+                return value.trim(); // Remove espaços em branco
+            }
+            return defaultValue; // Retorna um valor padrão se não for uma string
+        }
+        
+        // Apenas adicionar os campos CPF e Chave PIX como strings ao reciboData
+        reciboData.name_funcionario = checkAndParseString(nomeFuncionarioSelecionadoReembolso);
+        reciboData.nome_cargo = checkAndParseString(reciboData.nome_cargo_reembolso);
+        reciboData.horas_trabalhadas = 0;
+        reciboData.horas_extras_um = checkAndParse(reciboData.horas_extras_um_reembolso, 10);
+        reciboData.horas_extras_dois = checkAndParse(reciboData.horas_extras_dois_reembolso, 10);
+        reciboData.horas_noturnas = checkAndParse(reciboData.horas_noturnas_reembolso, 10);
+        reciboData.repouso_remunerado = 0;
+        reciboData.correcao_positiva = 0;
+        reciboData.correcao_negativa = 0;
+        reciboData.data_inicio = formatDate(reciboData.data_inicio_reembolso);
+        reciboData.data_fim = formatDate(reciboData.data_fim_reembolso);
+        reciboData.data_pagamento= formatDate(reciboData.data_pagamento_reembolso);
+        reciboData.valor_diarias = 0;
+        reciboData.parcela_vale = 0;
+        reciboData.diferenca_calculo = 0;
+
+        console.log('Valor de name_funcionario:', reciboData.name_funcionario);
+        console.log('Valor de nome_cargo:', reciboData.nome_cargo);
+        console.log('Valor de data_pagamento:', reciboData.data_pagamento);
+
+
+        // Verifique se todos os campos obrigatórios estão preenchidos
+        const requiredFields = ['data_inicio','data_fim', 'data_pagamento','nome_cargo','name_funcionario','horas_trabalhadas', 'horas_extras_um', 'horas_extras_dois', 'horas_noturnas', 'valor_diarias', 'correcao_positiva', 'correcao_negativa','parcela_vale','diferenca_calculo'];
+
+        //Valida os dados enviados -> Valor fucionario === string // Demais tem que ser float.
+        for (const field of requiredFields) {
+        const value = reciboData[field];
+
+        // Verifica se o campo é nome_funcionario
+        if (field === 'name_funcionario'|| field === 'nome_cargo' ) {  
+        if (typeof value !== 'string' || value.trim() === '') {
+            alert('Nome do Cargo  e Nome Funcionario são obrigátorios');
+            console.error(`Campo obrigatório "${field}" é inválido.`);
+            alert('Nome e Cargo são Obrigatorios!')
+            return;
+        }
+        } 
+
+        // Verifica se o campo é data_inicio ou data_fim
+        else if (field === 'data_inicio' || field === 'data_fim' || field === 'data_pagamento' ) {
+        if (!value || new Date(value.split('-').reverse().join('-')).toString() === "Invalid Date") {
+            const errorMessage = `Preenchimento do campo "${field}" é obrigatorio!.`;
+            alert('O campos de Data são Obrigatorios!')
+            console.error(errorMessage);
+
+            
+            // Exibir a mensagem de erro no front-end
+            const errorElement = document.getElementById('error-message');
+            errorElement.textContent = errorMessage; // Define o texto da mensagem
+            errorElement.style.display = 'block'; // Torna a mensagem visível
+
+                    // Ocultar a mensagem após 5 segundos
+            setTimeout(() => {
+                errorElement.style.display = 'none'; // Esconde a mensagem
+            }, 5000); 
+
+            return;
+        }
+        }
+        
+        // Para outros campos que são numéricos
+        else {
+        if (value === undefined || value === null || isNaN(value)) {
+            console.error(`Campo obrigatório "${field}" é inválido.`);
+            
+            return;
+        }
+        }
+
+        } 
+            // Enviar os dados para o backend
+        console.log('Chegou aqui: antes de gerarRecibo');
+        await gerarReciboReembolso(reciboData);
+
+        //***************************  Envie os dados para o backend ***********************   
+        async function gerarReciboReembolso(reciboData) {
+            console.log('Chegou aqui: Depois de gerarRecibo'); 
+        
+            // Validação dos dados obrigatórios antes de enviar para o backend
+            console.log('Dados enviados ao backend:', reciboData);
+        
+            // Verifique se os campos obrigatórios estão presentes
+            if (!reciboData.data_inicio || !reciboData.data_fim || !reciboData.name_funcionario || !reciboData.nome_cargo) {
+                console.error('Dados obrigatórios faltando!');
+                alert('Dados obrigatórios faltando!');
+                return; // Se faltar algum dado, não envia a requisição
+            }
+        
+            try {
+                console.log('Enviando dados para o backend...');
+
+                const response = await fetch(`${apiUrl}/api/criar_recibo_reembolso`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(reciboData),
+                    mode: 'cors'
+                });
+        
+                if (response.ok) {
+                    const contentType = response.headers.get('Content-Type');
+                    if (contentType && contentType.includes('application/pdf')) {
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+        
+                        // Preencher o iframe com o PDF
+                        const iframe = document.createElement('iframe');
+                        iframe.style.width = '100%';
+                        iframe.style.height = '600px';
+                        iframe.src = url;
+                        document.getElementById('documentContentPreview').innerHTML = '';
+                        document.getElementById('documentContentPreview').appendChild(iframe);
+        
+                        // Configurar download
+                        document.getElementById('printDocumentButton').onclick = function () {
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `${funcionario.nome_funcionario} de ${reciboData.data_inicio} até ${reciboData.data_fim}.pdf`;
+                            document.body.appendChild(a);
+                            a.click();
+                            window.URL.revokeObjectURL(url);
+                            document.body.removeChild(a);
+                            console.log("Botão de download acionado.");
+                        };
+        
+                        // Fechar o modal
+                        document.querySelector('.btn-secondary[data-bs-dismiss="modal"]').onclick = function () {
+                            $('#documentPreviewModal').modal('hide');
+                        };
+        
+                        // Mostrar o modal
+                        $('#documentPreviewModal').modal('show');
+                    } else {
+                        console.error('Erro: A resposta não é um PDF. Tipo de conteúdo:', contentType);
+                    }
+                } else {
+                    const errorData = await response.json();
+                    console.error('Erro ao gerar o olerite:', errorData.error);
+                    alert('Erro ao gerar o olerite: ' + errorData.error);
+                    console.log('Erro detalhado do backend:', errorData);
+                }
+            } catch (error) {
+                console.error('Erro inesperado:', error);
+                alert('Erro inesperado ao tentar gerar o recibo.');
+            }
+        }
+        
+            });            
+
+
+                        
+            

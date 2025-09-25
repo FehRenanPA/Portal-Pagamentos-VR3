@@ -40,10 +40,11 @@
 
     <!-- Tabs -->
     <div class="tab-buttons">
-        <button onclick="showTab('lista')">Lista de Funcionários</button>
-        <button onclick="showTab('funcionarios')">Cadastro de Funcionários</button>
-        <button onclick="showTab('recibo')">Gerador de Recibo</button>
-    </div>
+        <button onclick="showTab('lista')">Lista de Diaristas</button>
+        <button onclick="showTab('funcionarios')">Cadastro Diarista</button>
+        <button onclick="showTab('recibo')">Recibo Diarista</button>
+        <button onclick="showTab('reembolso')">Recibos Horas Extras</button>
+    </div>  
 
     <!-- Lista de Funcionários -->
     <div id="lista" class="tab active">
@@ -341,6 +342,82 @@
             </div>
         </div>
 
+<!-- Modal para gerar recibos de reembolso -->
+ <div id="reembolso" class="tab">
+    <div class="form-container">
+        <form id="reembolso-form">
+            <div class="input-row">
+                <div class="form-group">
+                    <label for="data_inicio_reembolso">Data Inicio:</label>
+                    <input type="date" id="data_inicio_reembolso" name="data_inicio_reembolso" required placeholder="EX: dd/mm/aaaa">
+                </div>
+                <div class="form-group">    
+                    <label for="data_fim_reembolso">Data Fim:</label>
+                    <input type="date" id="data_fim_reembolso" name="data_fim_reembolso" required placeholder="EX: dd/mm/aaaa">
+                </div>
+                <div class="form-group">    
+                    <label for="data_pagamento_reembolso">Data de Pagamento:</label>
+                    <input type="date" id="data_pagamento_reembolso" name="data_pagamento_reembolso" required placeholder="EX: dd/mm/aaaa">
+                </div>
+            </div>
+            <div class="input-row">
+                <div class="form-group">
+                    <label for="name_funcionario_reembolso">Nome do Funcionário:</label>
+                    <select id="name_funcionario_reembolso" name="name_funcionario_reembolso" style="width: 105%;" required>
+                    <option value="" disabled selected>Selecione um funcionário</option>
+                     <!-- Funcionarios serão preenchidos aqui -->
+                    <option value="ID_DO_FUNCIONARIO_REEMBOLSO">NOME_DO_FUNCIONARIO</option>
+                     <!-- Adicione aqui as opções dinâmicas com os funcionários -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="nome_cargo_reembolso">Cargo:</label>
+                    <input type="text" id="nome_cargo_reembolso" name="nome_cargo_reembolso" required/> <!-- readonly para impedir edição manual -->
+                </div>
+                <div class="form-group">
+                    <label for="empresa">Nome da Empresa:</label>
+                    <input type="text" id="empresa" name="empresa" required/> <!-- readonly para impedir edição manual -->
+                </div>
+            </div>
+            <div class="input-row">
+                <div class="form-group">
+                    <label for="horas_extras_um_reembolso">Horas Extras  50%:</label>
+                    <input type="number" step="0.01"  id="horas_extras_um_reembolso" name="horas_extras_um_reembolso" required placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="horas_extras_dois_reembolso">Horas Extras de 100%:</label>
+                    <input type="number" step="0.01"  id="horas_extras_dois_reembolso" name="horas_extras_dois_reembolso" required placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="horas_noturnas_um_reembolso">Horas Noturnas:</label>
+                    <input type="number" step="0.01"  id="horas_noturnas_reembolso" name="horas_noturnas_reembolso" required placeholder="0.00">
+                </div>
+            </div>
+            <button type="button" id="gerarReciboButtonReembolso">Gerar Documento</button> 
+            <div id="error-message" style="color: red; display: none;"></div>
+        </form>
+    </div>
+</div>
+    
+            <!-- PUP UP para pre visualização -->
+        <div class="modal" id="documentPreviewModalReembolso" tabindex="-1" aria-labelledby="documentPreviewModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg-custom">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="documentPreviewModalLabelReembolso">Prévia do Documento</h5>
+                    </div>
+                    <div class="modal-body">
+                        <pre id="documentContentPreviewReembolso"></pre> <!-- Prévia do documento -->
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" id="printDocumentButtonReembolso" class="btn btn-primary">Gerar PDF</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        
 <!-- Modal para Gerar Etiquetas -->
 <div id="modal-gerar-etiqueta" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
     <div style="background-color: white; padding: 20px; border-radius: 10px; max-width: 700px; width: 900%; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
@@ -418,7 +495,7 @@
     <script type="module"> 
     import { selecionarTodos, fetchCargos, gerarEtiqueta, abrirModalExcel, abrirModal , pesquisarEquipes, fecharModal, fecharModalExcel, 
         carregarCheckboxes,  capturarArquivosSelecionados, baixarArquivoExcelSelecionado, filterFuncionarios , showTab } from './script.js';  
-    // Adiciona os event listeners após o DOM estar carregado
+        // Adiciona os event listeners após o DOM estar carregado
     window.selecionarTodos=selecionarTodos;
     window.fetchCargos = fetchCargos;
     window.abrirModalExcel = abrirModalExcel;

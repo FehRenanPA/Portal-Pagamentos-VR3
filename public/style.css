@@ -693,11 +693,7 @@ li {
 .form-group input,
 .form-group select {
     width: 100%; /* Faz o input ocupar 100% da largura do grupo */
-<<<<<<< HEAD
-    padding: 5px; /* Adiciona padding para um visual melhor */
-=======
     padding: 8px; /* Adiciona padding para um visual melhor */
->>>>>>> b2341e7889e447dffaa274c107459a9a67c2cca6
     border: 3px solid #444; /* Adiciona borda */
     border-radius: 10px; /* Bordas arredondadas */
 }
@@ -750,14 +746,10 @@ iframe {
 }
 
 .close:hover {
-<<<<<<< HEAD
+
     background-color: #807e7e; /* Cor mais escura ao passar o mouse */
 }
-=======
-    background-color: #aaa; /* Cor mais escura ao passar o mouse */
-}
 
->>>>>>> b2341e7889e447dffaa274c107459a9a67c2cca6
 /* Garantir que o modal e seus elementos estejam bem posicionados */
 #modal-excel {
     display: flex;
