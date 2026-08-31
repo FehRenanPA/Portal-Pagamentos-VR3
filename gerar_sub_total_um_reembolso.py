@@ -67,6 +67,8 @@ class Sub_total_um_reembolso:
         
     def adicionar_diferenca_positiva(self,valor):    
         self.diferenca_calculo += valor    
+
+       
         
     def valida_funcionario_reembolso(self):   
         #Bucar somente quando a class  gerar olerite for chamada

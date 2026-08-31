@@ -157,8 +157,8 @@ class Gerar_olerite_reembolso:
         data_fim_formatada = (self.funcao.data_fim).strftime('%d/%m/%Y')
 
         return [
-            [f"REFERÊNCIA: HORAS EXTRAS E ADICIONAL NOTURNO", f"{data_inicio_formatada}","Até", f"{data_fim_formatada}"],
-            [f"SALARIO BASE : R${salario_paragraph}", "", "", ""],
+            [f"REFERÊNCIA: HORAS EXTRAS E ADICIONAL NOTURNO", f"{data_inicio_formatada}s","Até", f"{data_fim_formatada}"],
+            [f"SALARIO BASE : R$ {salario_formatado}", "", "", ""],
             [f"NOME: {self.funcao.funcionario_reembolso['nome_funcionario']}", "    QUAT.  VL R$","","PROVENTO"],
             [f"HORAS EXTRAS DE 50%:", f"{self.funcao.horas_extras_um:.2f}  X  {self.funcao.funcionario_reembolso['valor_hora_extra_um']:.2f}","=", f"R${total_pagamento['pagamento_horas_extras_um']:.2f}"],
             [f"HORAS EXTRAS DE 100%:", f"{self.funcao.horas_extras_dois:.2f}  X  {self.funcao.funcionario_reembolso['valor_hora_extra_dois']:.2f}","=", f"R${total_pagamento['pagamento_horas_extras_dois']:.2f}"],
