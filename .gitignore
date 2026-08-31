@@ -34,3 +34,5 @@ __pycache__/
 VR3-clean/
 __pycache__/
 *.pyc
+venv_git/
+venv_git/
