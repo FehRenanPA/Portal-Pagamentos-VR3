@@ -26,6 +26,7 @@ class Sub_total_um:
         self.mais = 0
         self.menos = 0
         self.diferenca_calculo = 0
+        self.faltas = 0
       
 
         
@@ -68,6 +69,9 @@ class Sub_total_um:
         
     def adicionar_diferenca_positiva(self,valor):    
         self.diferenca_calculo += valor    
+
+    def valor_faltas(self,valor):    
+        self.faltas += valor     
         
     def valida_funcionario(self):
         #Bucar somente quando a class  gerar olerite for chamada
