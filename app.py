@@ -1,0 +1,1150 @@
+from flask import Flask, request, jsonify, render_template, send_file, abort, Response
+from datetime import datetime
+from criar_cargo import CriarFuncionario
+from criar_reembolso import CriarReembolso
+from gerar_sub_total_um import Sub_total_um
+from gerar_sub_total_um_ferias import Sub_total_um_ferias
+from gerar_sub_total_um_reembolso import Sub_total_um_reembolso
+from gerador_olerite import Gerar_olerite
+from gerador_olerite_ferias import Gerar_olerite_ferias
+from gerador_olerite_reembolso import  Gerar_olerite_reembolso
+import firebase_admin
+from firebase_admin import storage, credentials, firestore, auth
+from bson.objectid import ObjectId
+from pymongo import MongoClient
+import json
+import os
+import time
+from flask_cors import CORS
+import logging
+from utils import is_valid_uuid
+import sys
+from werkzeug.serving import run_simple
+from io import BytesIO
+from docx.shared import Pt, Cm
+from io import BytesIO
+import threading
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import mm
+from reportlab.pdfgen import canvas
+from salvar_dados_mongo import MongoDBHandler
+from dotenv import load_dotenv
+from datetime import datetime
+from bson import ObjectId
+from pymongo.errors import PyMongoError
+from gerar_relatorio import GerarExcel
+from gerar_relatorio_extras import GerarExcelExtras
+import traceback
+import pyrebase
+from firebase_auth import gerar_id_token 
+import requests
+
+# Carregar variáveis de ambiente do arquivo .env
+load_dotenv()
+
+logging.basicConfig(
+    level=logging.WARNING,  # Nível de log (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
+
+    
+cred_path = {
+    "type": "service_account",
+    "project_id": os.getenv('FIREBASE_PROJECT_ID'),
+    "private_key_id": os.getenv('FIREBASE_PRIVATE_KEY_ID'),
+    "private_key": os.getenv('FIREBASE_PRIVATE_KEY').replace('\\n', '\n'),
+    "client_email": os.getenv('FIREBASE_CLIENT_EMAIL'),
+    "client_id": os.getenv('FIREBASE_CLIENT_ID'),
+    "auth_uri": os.getenv('FIREBASE_AUTH_URI'),
+    "token_uri": os.getenv('FIREBASE_TOKEN_URI'),
+    "auth_provider_x509_cert_url": os.getenv('FIREBASE_AUTH_PROVIDER_X509_CERT_URL'),
+    "client_x509_cert_url": os.getenv('FIREBASE_CLIENT_X509_CERT_URL'),
+    "universe_domain": os.getenv('FIREBASE_UNIVERSE_DOMAIN')
+}    
+print(cred_path)
+
+cred = credentials.Certificate(cred_path) 
+print(f"Service Account Email: {cred.service_account_email}")  
+firebase_admin.initialize_app(cred)
+firestore_client = firestore.client()  # Inicializa o Firestore
+print(f"Service Account Email: {cred.service_account_email}")
+app = Flask(__name__)
+
+# Habilitarr CORS
+CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+
+MONGO_URI = os.getenv('MONGO_URI') 
+
+
+if not MONGO_URI:
+    logger.error("A configuração MONGO_URI não foi definida no Firebase Functions ou no arquivo .env!")
+    raise ValueError("A configuração MONGO_URI não foi definida!")
+
+client = MongoClient(MONGO_URI)
+db = client['FUNCIONARIOS_VR3_PAGAMENTOS']
+colecao = db['funcionario']
+colecao_reembolso = db['reembolso']
+colecao_pecas = db['pecas']
+
+
+def gerar_custom_token(uid):
+    try:
+        if not uid:
+            logger.error("UID está vazio!")
+            return None
+        logger.info(f"Gerando custom token para o UID: {uid}")
+        custom_token_str = auth.create_custom_token(uid)
+
+        # Converter o token gerado de bytes para string
+        custom_token= custom_token_str.decode('utf-8')
+
+        logger.info(f"Custom token gerado com sucesso para o UID: {uid}")
+        return custom_token # Retorne o token como string
+    except Exception as e:
+        logger.error(f"Erro ao gerar o custom token: {e}")
+        return None
+
+
+def get_id_token(custom_token):
+    try:
+        # O custom_token é verificado e o ID Token é extraído
+        decoded_token = auth.verify_id_token(custom_token)
+        return decoded_token['uid']  # Retorna o UID (ou o id_token se for necessário para autenticação)
+    except Exception as e:
+        logger.error(f"Erro ao verificar o custom_token: {e}")
+        return None
+   
+@app.route('/api/generate-custom-token', methods=['POST'])
+def generate_custom_token():
+    data = request.get_json()  # Obtém os dados JSON enviados
+    logger.debug(f"Dados recebidos: {data}")  # Adicione um log para debugar
+    uid = data.get('uid')  # Tenta pegar o 'uid' do corpo da requisição
+    if not uid:
+        logger.error("UID não fornecido no corpo da requisição")
+        return jsonify({"error": "UID não fornecido"}), 400  # Retorna erro se não encontrar o UID
+    
+    try:
+        custom_token = gerar_custom_token(uid)  # Passa o 'uid' para a função
+        if custom_token:
+            return jsonify({"custom_token": custom_token}), 200
+        else:
+            return jsonify({"error": "Erro ao gerar custom token"}), 500
+    except Exception as e:
+        logger.error(f"Erro ao gerar custom token: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+# Rota para obter dados do Firestore usando o ID Token
+@app.route('/api/firestore/get-data', methods=['POST'])
+def get_data():
+    try:
+        data = request.get_json()
+        id_token = data.get('id_token')
+
+        # Verifique se o ID Token foi enviado
+        if not id_token:
+            return jsonify({"error": "ID Token não fornecido"}), 400
+
+        # Valide o ID Token
+        decoded_token = auth.verify_id_token(id_token)
+        uid = decoded_token.get('uid')
+
+        return jsonify({"message": "Token válido", "uid": uid}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 401
+
+# Rota para gerar e retornar o ID Token - teste
+@app.route('/api/auth/get-id-token', methods=['POST'])
+def generate_id_token():
+    try:
+        # Chama a função gerar_id_token
+        id_token = gerar_id_token()
+
+        if not id_token:
+            return jsonify({"error": "Falha ao gerar o ID Token"}), 500
+
+        return jsonify({"id_token": id_token, "message": "ID Token gerado com sucesso"}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+#______________ Retorna para listagem de todos Funcionarios e Reembolsos ______________#
+
+#______________Listagem de Funcionarios _________________#
+@app.route('/api/funcionarios', methods=['GET'])
+def get_all_funcionarios():
+    print(">>> ROTA get_all_funcionarios() chamada")
+    """Retorna todos os funcionários do MongoDB."""
+    funcionarios = CriarFuncionario.carregar_funcionarios()
+    return jsonify(funcionarios), 200  # jsonify aplicado aqui, dentro da rota
+        
+#________Listagem de Funcionarios para reembolso _________#
+@app.route('/api/reembolsos', methods=['GET'])
+def get_all_reembolsos():
+    """Retorna todos os reembolsos do MongoDB."""
+    reembolsos = CriarReembolso.carregar_funcionarios_reembolso()
+    return jsonify(reembolsos), 200  # jsonify aplicado aqui, dentro da rota
+
+
+    
+####--------------Retorna O funcioanriod e acordo com o ID--------------#####
+@app.route('/api/funcionarios/<string:funcionario_id>', methods=['GET'])
+def get_funcionario_por_id(funcionario_id):
+    """Retorna um único funcionário com base no ID."""
+    try:
+        print(f"Buscando funcionário com ID: {funcionario_id}")
+        funcionario = CriarFuncionario.carregar_funcionario_por_id(funcionario_id)
+        if not funcionario:
+            return jsonify({'error': 'Funcionário não encontrado'}), 404
+        return jsonify(funcionario), 200
+    except Exception as e:
+        print(f"Erro ao buscar funcionário: {e}")
+        return jsonify({'error': 'Erro interno no servidor'}), 500
+
+####--------------Retorna O funcioanriod e acordo com o ID--------------#####
+@app.route('/api/reembolsos/<string:reembolso_id>', methods=['GET'])
+def get_reembolso_por_id(reembolso_id):
+    """Retorna um único reembolso com base no ID."""
+    try:
+        print(f"Buscando reembolso com ID: {reembolso_id}")
+        reembolso = CriarReembolso.carregar_reembolso_por_id(reembolso_id)
+        if not reembolso:
+            return jsonify({'error': 'Reembolso não encontrado'}), 404
+        return jsonify(reembolso), 200
+    except Exception as e:
+        print(f"Erro ao buscar reembolso: {e}")
+        return jsonify({'error': 'Erro interno no servidor'}), 500
+
+
+            ######## Preparativos para o Relatorio #########
+#---------------- Instancia o manipulador do MongoDB ----------------------------
+db_handler = MongoDBHandler(database_name="FUNCIONARIOS_VR3_PAGAMENTOS", collection_name="pagamentos_periodo")
+db_handler_extras = MongoDBHandler(database_name="FUNCIONARIOS_VR3_PAGAMENTOS", collection_name="pagamento_reembolso")
+
+#-------------- Converste o retorno do mongo para string ----------------------
+def serialize_document(doc):
+    """
+    Converte um documento MongoDB para um formato serializável pelo JSON.
+    """
+    for key, value in doc.items():
+        if isinstance(value, ObjectId):
+            doc[key] = str(value)  # Converte ObjectId para string
+        elif isinstance(value, datetime):
+            doc[key] = value.strftime("%Y-%m-%d %H:%M:%S")  # Formata datetime como string
+    return doc
+
+
+class CriarReembolso:
+    """Carrega e gerencia reembolsos no MongoDB."""
+
+    @staticmethod
+    def carregar_reembolso_por_id(reembolso_id):
+        try:
+            # Verifica se o id é uma string e tenta convertê-lo para ObjectId
+            if isinstance(reembolso_id, str):
+                reembolso_id = ObjectId(reembolso_id)
+
+            reembolso = colecao_reembolso.find_one({"_id": reembolso_id})
+            if reembolso:
+                reembolso['_id'] = str(reembolso['_id'])  # Converte o _id para string
+            return reembolso
+        except Exception as e:
+            print(f"Erro ao carregar reembolso por ID: {e}")
+            return None
+
+    @staticmethod
+    def carregar_funcionarios_reembolso():
+        """Carrega os funcionários diretamente do MongoDB."""
+        funcionarios = []
+        for reembolso in colecao_reembolso.find():  # Carregar todos os funcionários do MongoDB
+            reembolso['_id'] = str(reembolso['_id'])  # Converte o _id para string
+            funcionarios.append(reembolso)
+        return funcionarios
+
+    @staticmethod
+    def salvar_funcionarios_reembolso(reembolso_dict):
+        """Salva os funcionários no MongoDB."""
+        # Converte o dicionário de funcionários para uma lista de documentos
+        reembolso_lista = []
+        for reembolso_id, dados in reembolso_dict.items():
+            reembolso_dados = dados.copy()  # Faz uma cópia para evitar modificações diretas
+            reembolso_dados['_id'] = reembolso_id  # Coloca o nome como campo
+            reembolso_lista.append(reembolso_dados)
+
+        # Apaga todos os documentos antes de inserir novos (opcional)
+        # colecao.delete_many({})
+        colecao.insert_many(reembolso_lista)  # Insere novos dados
+        print("Funcionários salvos no MongoDB com sucesso.")
+
+
+# Exemplo de chamada
+funcionario_dict = CriarReembolso.carregar_funcionarios_reembolso()
+if funcionario_dict:
+    print("Funcionários carregados com sucesso:")
+else:
+    print("Nenhum funcionário encontrado no MongoDB.")
+
+
+
+
+class CriarFuncionario:
+    
+    @staticmethod
+    def carregar_funcionario_por_id(funcionario_id):
+        """Carrega um funcionário específico pelo ID."""
+        try:
+            # Verifica se o id é uma string e tenta convertê-lo para ObjectId
+            if isinstance(funcionario_id, str):
+                funcionario_id = ObjectId(funcionario_id)
+
+            funcionario = colecao.find_one({"_id": funcionario_id})
+            if funcionario:
+                funcionario['_id'] = str(funcionario['_id'])  # Converte o _id para string
+            return funcionario
+        except Exception as e:
+            print(f"Erro ao carregar funcionário por ID: {e}")
+            return None
+    
+    @staticmethod
+    def carregar_funcionarios():
+        """Carrega os funcionários diretamente do MongoDB."""
+        funcionarios = []
+        for funcionario in colecao.find():  # Carregar todos os funcionários do MongoDB
+            funcionario['_id'] = str(funcionario['_id'])  # Converte o _id para string
+            funcionarios.append(funcionario)
+        return funcionarios
+    
+    @staticmethod
+    def salvar_funcionarios(funcionario_dict):
+        """Salva os funcionários no MongoDB."""
+        # Converte o dicionário de funcionários para uma lista de documentos
+        funcionarios_lista = []
+        for funcionario_id, dados in funcionario_dict.items():
+            funcionario_dados = dados.copy()  # Faz uma cópia para evitar modificações diretas
+            funcionario_dados['_id'] = funcionario_id  # Coloca o nome como campo
+            funcionarios_lista.append(funcionario_dados)
+
+        # Apaga todos os documentos antes de inserir novos
+        #colecao.delete_many({})  # Se quiser substituir todos os documentos, delete os anteriores
+        colecao.insert_many(funcionarios_lista)  # Insere novos dados
+        print("Funcionários salvos no MongoDB com sucesso.")
+
+funcionario_dict = CriarFuncionario.carregar_funcionarios()
+if funcionario_dict:
+    print("Funcionários carregados com sucesso:")
+else:
+    print("Nenhum funcionário encontrado no MongoDB.")
+
+
+###-----------------Busca dados para gerar o Relatorio/Excell com dados do Mongo--------------------------#####
+
+                   # Listagem geral 
+
+from datetime import datetime
+
+@app.route('/api/listar_documentos', methods=['GET'])
+def listar_documentos():
+    try:
+        # Obtém os parâmetros de data do front-end
+        data_inicio = request.args.get('data_inicio')
+        data_fim = request.args.get('data_fim')
+
+        # Validação dos parâmetros obrigatórios
+        if not data_inicio or not data_fim:
+            logger.warning("Parâmetros obrigatórios ausentes.")
+            return jsonify({"erro": "Os parâmetros 'data_inicio' e 'data_fim' são obrigatórios."}), 400
+
+        logger.info(f"Recebendo solicitação para listar documentos entre {data_inicio} e {data_fim}.")
+
+        # Busca os documentos com base no intervalo de datas
+        try:
+            documentos = db_handler.buscar_dado(data_inicio=data_inicio, data_fim=data_fim)
+        except Exception as e:
+            logger.error(f"Erro ao buscar documentos no banco de dados: {e}", exc_info=True)
+            return jsonify({"erro": "Erro ao buscar documentos no banco de dados."}), 500
+
+        if not documentos:
+            logger.info(f"Nenhum documento encontrado entre {data_inicio} e {data_fim}.")
+            return jsonify({"mensagem": "Nenhum documento encontrado para o intervalo especificado."}), 404
+
+        # Serializa os documentos encontrados
+        documentos_serializados = [serialize_document(doc) for doc in documentos]
+
+        logger.info(f"Documentos encontrados: {len(documentos_serializados)} documentos.")
+        return jsonify(documentos_serializados), 200
+
+    except Exception as e:
+        logger.error(f"Erro inesperado ao listar documentos: {e}", exc_info=True)
+        return jsonify({"erro": "Erro inesperado ao listar documentos"}), 500
+
+
+#-------- Listagem Especifica e gerar arquivo excell
+@app.route('/api/relatorio_periodo', methods=['POST'])
+def relatorio_periodo():
+    try:
+        data = request.get_json()
+         # Log para ver o JSON recebido
+        logger.info(f"Requisição recebida: {data}")
+
+        # Recebe a lista de equipes (pode ser uma lista de uma ou mais equipes)
+        equipes = data.get("equipe")
+        data_inicio = data.get("data_inicio")
+        data_fim = data.get("data_fim")
+
+        # Validação dos parâmetros
+        if not equipes or not isinstance(equipes, list) or not all(isinstance(equipe, str) for equipe in equipes):
+            return jsonify({"erro": "É necessário enviar uma lista de equipes, onde cada item é uma string."}), 400
+
+        if not data_inicio or not data_fim:
+            return jsonify({"erro": "É necessário enviar as datas de início e fim."}), 400
+
+        documentos = db_handler.buscar_por_filtro(data_inicio=data_inicio, data_fim=data_fim, equipes=equipes)
+
+        if documentos:
+            # Serializa os documentos encontrados
+            documentos_list = [serialize_document(doc) for doc in documentos]
+            return jsonify(documentos_list), 200
+        else:
+            return jsonify({"message": "Nenhum documento encontrado para o filtro fornecido. Selecione um periodo valido"}), 404
+
+    except Exception as e:
+        logger.error(f"Erro inesperado: {e}", exc_info=True)
+
+        return jsonify({"erro": "Erro inesperado ao processar a requisição. Acione o administrador"}), 500
+
+
+##------------ Gerar Relatorio -------------------    
+@app.route('/api/gerar_relatorio', methods=['POST'])
+def gerar_relatorio():
+    try:
+        data = request.get_json()
+        
+        # Valida se os dados estão presentes
+        if not data or 'documentos' not in data:
+            return jsonify({"error": "Payload inválido ou ausente."}), 400
+
+        documentos = data.get('documentos', [])
+        
+        if not documentos:
+            return jsonify({"error": "Nenhum documento foi enviado."}), 400
+
+        data_inicio = documentos[0].get('data_inicio', '')
+        data_fim = documentos[0].get('data_fim', '')
+        equipes = list(set(doc.get('equipe', '') for doc in documentos if 'equipe' in doc))
+
+        if not data_inicio or not data_fim:
+            return jsonify({"error": "Data de início ou fim ausente."}), 400
+
+        gerar_excel = GerarExcel(data_inicio, data_fim, equipes, documentos)
+
+        arquivo_em_memoria = gerar_excel.gerar_excel_em_memoria()
+
+        if not arquivo_em_memoria:
+            return jsonify({"error": "Erro ao gerar o relatório."}), 500
+
+        # Define o nome do arquivo para download
+        filename = f"relatorio_{data_inicio}_{data_fim}.xlsx"
+
+        # Retorna o arquivo como resposta para download
+        return Response(
+            arquivo_em_memoria,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            headers={'Content-Disposition': f'attachment;filename={filename}'}
+        )
+
+    except Exception as e:
+        print(f"Erro ao gerar o relatório: {e}")
+        return jsonify({"error": f"Erro ao gerar relatório: {str(e)}"}), 500
+
+
+#-------- Listagem Especifica das empresas para gerar arquivo excell
+@app.route('/api/relatorio_periodo_extras', methods=['POST'])
+def relatorio_periodo_extras():
+    try:
+        data = request.get_json()
+         # Log para ver o JSON recebido
+        logger.info(f"Requisição recebida: {data}")
+
+        # Recebe a lista de equipes (pode ser uma lista de uma ou mais equipes)
+        empresa = data.get("empresa")
+        data_inicio = data.get("data_inicio")
+        data_fim = data.get("data_fim")
+
+        # Validação dos parâmetros
+        if not empresa or not isinstance(empresa, list) or not all(isinstance(empresa, str) for empresa in empresa):
+            return jsonify({"erro": "É necessário enviar uma lista de empresas, onde cada item é uma string."}), 400
+
+        if not data_inicio or not data_fim:
+            return jsonify({"erro": "É necessário enviar as datas de início e fim."}), 400
+
+        documentos = db_handler_extras.buscar_por_filtro_extras(data_inicio=data_inicio, data_fim=data_fim, empresas=empresa)
+
+        if documentos:
+            # Serializa os documentos encontrados
+            documentos_list = [serialize_document(doc) for doc in documentos]
+            return jsonify(documentos_list), 200
+        else:
+            return jsonify({"message": "Nenhum documento encontrado para o filtro fornecido. Selecione um periodo valido"}), 404
+
+    except Exception as e:
+        logger.error(f"Erro inesperado: {e}", exc_info=True)
+        return jsonify({"erro": "Erro inesperado ao processar a requisição. Acione o administrador"}), 500
+
+##------------ Gerar Relatorio Horas extras-------------------    
+@app.route('/api/gerar_relatorio_extras', methods=['POST'])
+def gerar_relatorio_horas_extras():
+    try:
+        data = request.get_json()
+        
+        # Valida se os dados estão presentes
+        if not data or 'documentos' not in data:
+            return jsonify({"error": "Payload inválido ou ausente."}), 400
+
+        documentos = data.get('documentos', [])
+        
+        if not documentos:
+            return jsonify({"error": "Nenhum documento foi enviado."}), 400
+
+        data_inicio = documentos[0].get('data_inicio', '')
+        data_fim = documentos[0].get('data_fim', '')
+        empresas = list(set(doc.get('empresa', '') for doc in documentos if 'empresa' in doc))
+
+        if not data_inicio or not data_fim:
+            return jsonify({"error": "Data de início ou fim ausente."}), 400
+
+        gerar_excel = GerarExcelExtras(data_inicio, data_fim, empresas, documentos)
+
+        arquivo_em_memoria = gerar_excel.gerar_excel_em_memoria()
+
+        if not arquivo_em_memoria:
+            return jsonify({"error": "Erro ao gerar o relatório."}), 500
+
+        # Define o nome do arquivo para download
+        filename = f"Relatorio_Extras{data_inicio}_{data_fim}.xlsx"
+
+        # Retorna o arquivo como resposta para download
+        return Response(
+            arquivo_em_memoria,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            headers={'Content-Disposition': f'attachment;filename={filename}'}
+        )
+
+    except Exception as e:
+        print(f"Erro ao gerar o relatório: {e}")
+        return jsonify({"error": f"Erro ao gerar relatório: {str(e)}"}), 500
+
+
+
+##----------------------------------> Gerar etiquetas <------------------------------------##
+@app.route('/api/gerar-etiquetas', methods=['POST'])
+def gerar_etiquetas():
+    """Gera etiquetas em PDF para os funcionários, configurado para etiquetas Link 99x25.4mm (22 por folha A4)
+    com texto centralizado horizontal e verticalmente."""
+    
+    # Simulação da entrada de dados (SUBSTITUIR POR request.get_json() no seu código real)
+    try:
+        data = request.get_json()
+    except:
+        # Se estiver testando em ambiente sem request, use dados simulados
+        data = {"data_inicio": "2025-01-01", "data_fim": "2025-12-31"}
+
+    # Assume-se que 'data_inicio' e 'data_fim' estão sendo tratados corretamente
+    try:
+        data_inicio = datetime.strptime(data.get("data_inicio"), "%Y-%m-%d").strftime("%d/%m")
+        data_fim = datetime.strptime(data.get("data_fim"), "%Y-%m-%d").strftime("%d/%m/%Y")
+    except ValueError:
+        return jsonify({"error": "Formato de data inválido. Use YYYY-MM-DD."}), 400
+
+
+    # Carregar funcionários
+    funcionarios = CriarFuncionario.carregar_funcionarios()
+    if not funcionarios:
+        return jsonify({"error": "Nenhum funcionário encontrado"}), 404
+
+    # Ordenar os funcionários por nome
+    funcionarios_ordenados = sorted(funcionarios, key=lambda f: f.get("nome_funcionario", ""))
+
+    # --- Configurações da Página A4 ---
+    page_width = 595.27 # Largura A4 em pontos
+    page_height = 841.89 # Altura A4 em pontos
+
+    # --- Configurações da Etiqueta (9.9cm x 2.54cm) ---
+    etiqueta_largura = 280.63 # 9.9 cm ≈ 280.63 pt
+    etiqueta_altura = 72      # 2.54 cm ≈ 72 pt
+
+    # Layout: 2 colunas x 11 linhas
+    max_linhas_por_pagina = 11
+
+    # --- Margens EXATAS da Configuração (1 cm Superior, 0.5 cm Lateral) ---
+    margem_superior_cm = 28.35 # 1 cm ≈ 28.35 pt
+    margem_superior = page_height - margem_superior_cm # Posição Y inicial (do topo)
+
+    margem_lateral = 14.17 # 0.5 cm ≈ 14.17 pt (Margem esquerda)
+    
+    # Calculo do ponto de início da segunda coluna (Margem Lateral + Largura da Etiqueta,
+    # pois a Densidade Horizontal é igual à Largura)
+    inicio_coluna_1 = margem_lateral + etiqueta_largura
+    
+    # --- Parâmetros de Estilo e Conteúdo ---
+    fonte_padrao_tamanho = 10
+    # Limite para nome em 10pt (ajustado para caber sem cortar)
+    max_caracteres_nome = 38 
+
+    # Preparação do PDF
+    output = BytesIO()
+    c = canvas.Canvas(output, pagesize=(page_width, page_height))
+    linha_atual = 0
+    col_atual = 0
+    y = margem_superior # Posição Y do topo da etiqueta atual
+    recuo_interno_x = 10 # 5
+
+    for funcionario in funcionarios_ordenados:
+        nome_funcao = funcionario.get("nome_funcao", "Função Não Informada")
+        if nome_funcao == "INATIVO" or nome_funcao == "-" or nome_funcao is None:
+            continue
+
+        nome_funcionario_completo = funcionario.get("nome_funcionario", funcionario.get("numero_cpf", "Nome não disponível"))
+        
+        # Lógica de Truncamento para evitar corte HORIZONTAL em nomes longos
+        if len(nome_funcionario_completo) > max_caracteres_nome:
+            nome_funcionario = nome_funcionario_completo[:max_caracteres_nome].strip() + "..."
+        else:
+            nome_funcionario = nome_funcionario_completo
+            
+        etiqueta_texto = f"{nome_funcionario}\n{nome_funcao}\n{data_inicio} Á {data_fim}"
+
+        # Lógica de quebra de página
+        if linha_atual >= max_linhas_por_pagina:
+            c.showPage()
+            c.setFont("Helvetica", fonte_padrao_tamanho)
+            y = margem_superior
+            linha_atual = 0
+            col_atual = 0
+
+        # 1. Posição X da Borda Esquerda da Etiqueta
+        x_etiqueta_inicio = margem_lateral
+        if col_atual == 1:
+            x_etiqueta_inicio = inicio_coluna_1 # Início da segunda coluna
+            
+        # 2. Posição X Central (Centro da Etiqueta)
+        x_centro = x_etiqueta_inicio + recuo_interno_x
+
+
+        c.setFont("Helvetica", fonte_padrao_tamanho)
+        
+        # 3. Posição Y (Centralização Vertical)
+        # Ajuste de -14 (ideal de 11 + recuo de segurança de 3) para centralizar o bloco de texto de 3 linhas 
+        # dentro dos 72pt de altura da etiqueta.
+        linha_y_base_etiqueta = y 
+        linha_y = linha_y_base_etiqueta - 10
+        
+        for linha in etiqueta_texto.split('\n'):
+            # CORREÇÃO CRÍTICA: Usa drawCentredString e o ponto CENTRAL X
+            c.drawString(x_centro, linha_y, linha)
+            linha_y -= 13
+
+        # Avançar para a próxima coluna/linha
+        col_atual = (col_atual + 1) % 2
+        if col_atual == 0:
+            y -= (etiqueta_altura +3)
+            linha_atual += 1
+
+    c.save()
+    output.seek(0)
+    return output.getvalue(), 200, {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': 'attachment; filename="etiquetas.pdf"'
+    }
+    
+####Ajuste####
+##----------------------------------> Criar cadastro do funcionario <-----------------------------------##
+@app.route('/api/criar_funcionario', methods=['POST'])
+def criar_funcionario():
+    try:
+        data = request.json
+        
+        required_fields = ['nome_funcionario', 'nome_funcao', 'equipe', 'numero_cpf', 'chave_pix', 'valor_hora_base', 
+                           'valor_hora_extra_um', 'valor_hora_extra_dois', 'adicional_noturno', 
+                           'repouso_remunerado', 'valor_ferias', 'valor_um_terco_ferias', 
+                           'valor_decimo_terceiro', 'pagamento_fgts', 'desconto_inss', 
+                           'desconto_refeicao', 'desconto_transporte']
+        
+        if not data or any(field not in data for field in required_fields):
+            return jsonify({'error': 'Dados obrigatórios faltando!'}), 400
+
+        if colecao.find_one({'numero_cpf': data['numero_cpf']}):
+            return jsonify({'error': 'Funcionário com esse CPF já existe!'}), 409
+
+        novo_funcionario = {key: data.get(key) for key in required_fields}
+
+        # 2. Adiciona as datas de controle de criação e atualização
+        agora = datetime.now()
+        novo_funcionario['createdAt'] = agora
+        novo_funcionario['updatedAt'] = agora
+
+        insert_result = colecao.insert_one(novo_funcionario)
+        
+        funcionario_id = str(insert_result.inserted_id)
+        novo_funcionario['_id'] = funcionario_id
+        # Consulta os dados atualizados no banco para garantir consistência
+        dados_atualizados = list(colecao.find({}, {'_id': 0}))  # Exclui o campo `_id` bruto no retorno
+
+        # Retorna uma mensagem de sucesso com o ID do novo funcionário e os dados atualizados
+        return jsonify({
+            'message': 'Funcionário criado com sucesso!',
+            '_id': funcionario_id,
+            'dados_atualizados': dados_atualizados
+        }), 201
+
+    except Exception as e:
+        # Log detalhado para depuração
+        print("Erro inesperado ao criar funcionário:", e)
+        import traceback
+        print(traceback.format_exc())
+        return jsonify({'error': f'Erro interno do servidor: {str(e)}'}), 500
+ 
+##----------------------------------> Editar cadastro do funcionário <-----------------------------------##
+@app.route('/api/funcionario/<string:funcionario_id>', methods=['PUT'])
+def update_funcionario(funcionario_id):
+    try:
+        # Converte o id do funcionário para ObjectId, caso não seja do tipo adequado
+        try:
+            funcionario_id = ObjectId(funcionario_id)
+        except Exception as e:
+            return jsonify({'message': 'ID inválido.'}), 400
+
+        # Receber os dados do corpo da requisição
+        data = request.get_json()
+
+        # Verificar se o CPF enviado já pertence a outro funcionário
+        if "numero_cpf" in data:
+            cpf_novo = data["numero_cpf"]
+            cpf_existente = colecao.find_one({'numero_cpf': cpf_novo})
+
+            # Garantir que o CPF pertence ao mesmo funcionário
+            if cpf_existente and str(cpf_existente['_id']) != str(funcionario_id):
+                return jsonify({'message': 'Outro funcionário já possui este CPF.'}), 409
+
+        # ADICIONA A DATA DE ATUALIZAÇÃO AUTOMATICAMENTE
+        data['updatedAt'] = datetime.now()    
+
+        # Atualizar os dados do funcionário no banco de dados
+        resultado = colecao.update_one({'_id': funcionario_id}, {'$set': data})
+
+        # Se não houver correspondência para o ID, retornar erro
+        if resultado.matched_count == 0:
+            return jsonify({'message': 'Funcionário não encontrado.'}), 404
+
+        return jsonify({'message': 'Funcionário atualizado com sucesso.'})
+        # Consultar o banco para retornar os dados atualizados do funcionário
+        funcionario_atualizado = colecao.find_one({'_id': funcionario_id}, {'_id': 0})
+
+         # Consultar todos os dados para garantir consistência no front-end
+        dados_atualizados = list(colecao.find({}, {'_id': 0}))
+
+        return jsonify({
+            'message': 'Funcionário atualizado com sucesso.',
+            'funcionario_atualizado': funcionario_atualizado,
+            'dados_atualizados': dados_atualizados
+        })
+
+    except Exception as e:
+        # Registra o erro completo no log
+        app.logger.error(f"Erro ao atualizar o funcionário {funcionario_id}: {str(e)}", exc_info=True)
+        return jsonify({'message': 'Erro interno ao processar a requisição.'}), 500
+
+##----------------------------------> Criar cadastro do funcionario de extras <-----------------------------------##
+@app.route('/api/criar_funcionario_extras', methods=['POST'])
+def criar_funcionario_extras():
+    try:
+        data = request.json
+        
+        required_fields = ['nome_funcionario', 'nome_funcao', 'equipe', 'numero_cpf', 'chave_pix', 'valor_hora_base', 
+                           'valor_hora_extra_um', 'valor_hora_extra_dois', 'adicional_noturno', 
+                           'repouso_remunerado', 'valor_ferias', 'valor_um_terco_ferias', 
+                           'valor_decimo_terceiro', 'pagamento_fgts', 'desconto_inss', 
+                           'desconto_refeicao', 'desconto_transporte', 'empresa', 'cnpj_empresa', 'salario_base']
+        
+        if not data or any(field not in data for field in required_fields):
+            return jsonify({'error': 'Dados obrigatórios faltando!'}), 400
+
+        if colecao_reembolso.find_one({'numero_cpf': data['numero_cpf']}):
+            return jsonify({'error': 'Funcionário com esse CPF já existe!'}), 409
+
+        
+
+        novo_funcionario = {key: data.get(key) for key in required_fields}
+
+         # 2. Adiciona as datas de controle de criação e atualização
+        agora = datetime.now()
+        novo_funcionario['createdAt'] = agora
+        novo_funcionario['updatedAt'] = agora
+        
+        insert_result = colecao_reembolso.insert_one(novo_funcionario)
+        
+        funcionario_reembolso_id = str(insert_result.inserted_id)
+        novo_funcionario['_id'] = funcionario_reembolso_id
+        # Consulta os dados atualizados no banco para garantir consistência
+        dados_atualizados = list(colecao_reembolso.find({}, {'_id': 0}))  # Exclui o campo `_id` bruto no retorno
+
+        # Retorna uma mensagem de sucesso com o ID do novo funcionário e os dados atualizados
+        return jsonify({
+            'message': f'Funcionário {novo_funcionario["nome_funcionario"]} criado com sucesso!',
+            '_id': funcionario_reembolso_id,
+            'dados_atualizados': dados_atualizados
+        }), 201
+
+    except Exception as e:
+        # Log detalhado para depuração
+        print("Erro inesperado ao criar funcionário:", e)
+        import traceback
+        print(traceback.format_exc())
+        return jsonify({'error': f'Erro interno do servidor: {str(e)}'}), 500
+
+ 
+##----------------------------------> Editar cadastro do funcionário com extras <-----------------------------------##
+@app.route('/api/funcionario_extras/<string:reembolso_id>', methods=['PUT'])
+def update_funcionario_extras(reembolso_id):
+    try:
+        # Converte o id do funcionário para ObjectId, caso não seja do tipo adequado
+        try:
+            reembolso_id = ObjectId(reembolso_id)
+        except Exception as e:
+            return jsonify({'message': 'ID inválido.'}), 400
+
+        # Receber os dados do corpo da requisição
+        data = request.get_json()
+
+        # Verificar se o CPF enviado já pertence a outro funcionário
+        if "numero_cpf" in data:
+            cpf_novo = data["numero_cpf"]
+            cpf_existente = colecao_reembolso.find_one({'numero_cpf': cpf_novo})
+
+            # Garantir que o CPF pertence ao mesmo funcionário
+            if cpf_existente and str(cpf_existente['_id']) != str(reembolso_id):
+                return jsonify({'message': 'Outro funcionário já possui este CPF.'}), 409
+
+        # ADICIONA A DATA DE ATUALIZAÇÃO AUTOMATICAMENTE
+        data['updatedAt'] = datetime.now()
+
+        # Atualizar os dados do funcionário no banco de dados
+        resultado = colecao_reembolso.update_one({'_id': reembolso_id}, {'$set': data})
+
+        # Se não houver correspondência para o ID, retornar erro
+        if resultado.matched_count == 0:
+            return jsonify({'message': 'Funcionário não encontrado.'}), 404
+
+        return jsonify({'message': 'Funcionário atualizado com sucesso.'})
+        # Consultar o banco para retornar os dados atualizados do funcionário
+        funcionario_atualizado = colecao_reembolso.find_one({'_id': reembolso_id}, {'_id': 0})
+
+        # Consultar todos os dados para garantir consistência no front-end
+        dados_atualizados = list(colecao_reembolso.find({}, {'_id': 0}))
+
+        return jsonify({
+            'message': 'Funcionário atualizado com sucesso.',
+            'funcionario_atualizado': funcionario_atualizado,
+            'dados_atualizados': dados_atualizados
+        })
+
+    except Exception as e:
+        # Registra o erro completo no log
+        app.logger.error(f"Erro ao atualizar o funcionário {reembolso_id}: {str(e)}", exc_info=True)
+        return jsonify({'message': 'Erro interno ao processar a requisição.'}), 500
+
+###---------------------------------------> Criar Recibo <--------------------------------------------##
+
+@app.route('/api/criar_recibo', methods=['POST'])
+def criar_recibo():
+    try:
+        data = request.json
+        app.logger.info(f"Dados recebidos pelo back: {data}")
+    
+        required_fields = [
+            'data_inicio', 'data_fim', 'data_pagamento', 'name_funcionario', 'nome_cargo',
+            'horas_trabalhadas', 'valor_diarias', 'horas_extras_um', 'horas_extras_dois',
+            'horas_noturnas', 'correcao_positiva', 'correcao_negativa', 'parcela_vale',
+            'diferenca_calculo','ferias','empresa_exe','repouso_remunerado', 'faltas'
+        ]
+        app.logger.info("Verificando campos obrigatórios...")
+        if not data or any(field not in data for field in required_fields):
+            app.logger.error("Dados obrigatórios faltando!")
+            return jsonify({'error': 'Dados obrigatórios faltando!'}), 400
+        
+        # Validação e conversão de datas
+        app.logger.info("Iniciando a validação e conversão das datas...")
+        try:
+            data['data_inicio'] = datetime.strptime(data['data_inicio'], '%d-%m-%Y').date()
+            data['data_fim'] = datetime.strptime(data['data_fim'], '%d-%m-%Y').date()
+            data['data_pagamento'] = datetime.strptime(data['data_pagamento'], '%d-%m-%Y').date()
+            app.logger.info(f"Datas convertidas com sucesso: {data['data_inicio']}, {data['data_fim']}, {data['data_pagamento']}")
+        except ValueError as e:
+            app.logger.error(f"Erro na validação das datas: {e}")
+            return jsonify({'error': 'Datas devem estar no formato DD-MM-YYYY!'}), 400
+
+        # Conversão de campos numéricos
+        app.logger.info("Iniciando a conversão de valores numéricos...")
+        try:
+            for field in [
+                'horas_trabalhadas', 'horas_extras_um', 'horas_extras_dois', 'horas_noturnas',
+                'valor_diarias', 'correcao_positiva', 'correcao_negativa', 'parcela_vale',
+                'diferenca_calculo','repouso_remunerado','faltas'
+            ]:
+                data[field] = float(data[field])
+            app.logger.info(f"Valores numéricos convertidos com sucesso: {data}")
+        except ValueError as e:
+            app.logger.error(f"Erro ao converter valores numéricos: {e}")
+            return jsonify({'error': 'Valores de horas devem ser numéricos!'}), 400
+
+        
+        # Busca do funcionário no banco atualizado
+        app.logger.info("Carregando funcionários atualizados do banco...")
+        funcionario_dict = CriarFuncionario.carregar_funcionarios()
+        
+        # Busca do funcionário
+        funcionario_id = data['name_funcionario']
+        app.logger.info(f"Buscando informações do funcionário com ID: {funcionario_id}")
+        
+        
+        # Supondo que funcionario_dict seja uma lista de documentos de funcionários
+        funcionario = next((f for f in funcionario_dict if f['_id'] == funcionario_id), None)
+
+        if not funcionario:
+            app.logger.error(f"Funcionário não encontrado: {funcionario_id}")
+            return jsonify({'error': 'Funcionário não encontrado!'}), 404
+
+
+        if funcionario.get('nome_funcao') == "INATIVO":
+            app.logger.error(f"Funcionário {funcionario_id} está inativo!")
+            return jsonify({'error': 'Funcionário está inativo!'}), 403
+
+        # Criação do recibo
+        app.logger.info("Iniciando a criação do recibo...")
+
+       
+        try:
+            classe_calculo = Sub_total_um_ferias if data.get('ferias') is True else Sub_total_um
+            funcionario = classe_calculo(
+                data['nome_cargo'], funcionario_id, data['data_inicio'],
+                data['data_fim'], data['data_pagamento'], data['empresa_exe']
+            )
+
+            funcionario.adicionar_horas_trabalhadas(data['horas_trabalhadas'])
+            funcionario.adicionar_horas_noturnas(data['horas_noturnas'])
+            funcionario.adicionar_horas_extras_um(data['horas_extras_um'])
+            funcionario.adicionar_horas_extras_dois(data['horas_extras_dois'])
+            funcionario.adicionar_correcao_positiva(data['correcao_positiva'])
+            funcionario.adicionar_correcao_negativa(data['correcao_negativa'])
+            funcionario.adicionar_valor_por_hora(data['valor_diarias'])
+            funcionario.adicionar_pagamento_vale(data['parcela_vale'])
+            funcionario.adicionar_diferenca_positiva(data['diferenca_calculo'])
+            funcionario.adicionar_horas_repouso(data['repouso_remunerado'])  # Adiciona o valor de repouso remunerado
+            funcionario.valor_faltas(data['faltas']) 
+            
+
+           
+
+            app.logger.info(f"Valor de repouso remunerado adicionado: {data['repouso_remunerado']}")
+            app.logger.info("Recibo criado com sucesso.")
+        except Exception as e:
+            app.logger.error(f"Erro ao criar o recibo de diarista: {e}")
+            return jsonify({'error': 'Erro ao criar o recibo de diarista!'}), 500 # Teste
+
+        # Geração do PDF
+        app.logger.info("Gerando o PDF do olerite...")
+        try:
+            if data.get('ferias') is True:
+                olerite = Gerar_olerite_ferias(funcionario)
+                buffer = olerite.gerar_sub_um_ferias()
+            else:
+                olerite = Gerar_olerite(funcionario)
+                buffer = olerite.gerar_sub_um()
+            app.logger.info("PDF gerado com sucesso.")
+        except Exception as e:
+            app.logger.error(f"Erro ao gerar o PDF: {e}", exc_info=True)
+            return jsonify({'error': 'Erro ao gerar o PDF do recibo. Consulte o administador do sistema!'}), 500
+
+        # Envio do PDF para o cliente
+        app.logger.info("Enviando o PDF gerado para o cliente...")
+        return send_file(buffer, as_attachment=True, download_name='recibo.pdf', mimetype='application/pdf')
+
+    except Exception as e:
+        app.logger.error(f"Erro inesperado: {e}")
+        return jsonify({'error': 'Erro ao processar a solicitação!'}), 500
+
+
+
+###---------------------------------------> Criar Recibo Extras<--------------------------------------------##
+
+@app.route('/api/criar_recibo_reembolso', methods=['POST'])
+def criar_recibo_reembolso():
+    try:
+        data = request.json
+        app.logger.info(f"Dados recebidos pelo back: {data}")
+    
+        required_fields = [
+            'data_inicio', 'data_fim', 'data_pagamento', 'name_funcionario', 'nome_cargo',
+            'horas_trabalhadas', 'valor_diarias', 'horas_extras_um', 'horas_extras_dois',
+            'horas_noturnas', 'correcao_positiva', 'correcao_negativa', 'parcela_vale',
+            'diferenca_calculo',
+        ]
+        app.logger.info("Verificando campos obrigatórios...")
+        if not data or any(field not in data for field in required_fields):
+            app.logger.error("Dados obrigatórios faltando!")
+            return jsonify({'error': 'Dados obrigatórios faltando!'}), 400
+        
+        # Validação e conversão de datas
+        app.logger.info("Iniciando a validação e conversão das datas...")
+        try:
+            data['data_inicio'] = datetime.strptime(data['data_inicio'], '%d-%m-%Y').date()
+            data['data_fim'] = datetime.strptime(data['data_fim'], '%d-%m-%Y').date()
+            data['data_pagamento'] = datetime.strptime(data['data_pagamento'], '%d-%m-%Y').date()
+            app.logger.info(f"Datas convertidas com sucesso: {data['data_inicio']}, {data['data_fim']}, {data['data_pagamento']}")
+        except ValueError as e:
+            app.logger.error(f"Erro na validação das datas: {e}")
+            return jsonify({'error': 'Datas devem estar no formato DD-MM-YYYY!'}), 400
+
+        # Conversão de campos numéricos
+        app.logger.info("Iniciando a conversão de valores numéricos...")
+        try:
+            for field in [
+                'horas_trabalhadas', 'horas_extras_um', 'horas_extras_dois', 'horas_noturnas',
+                'valor_diarias', 'correcao_positiva', 'correcao_negativa', 'parcela_vale',
+                'diferenca_calculo'
+            ]:
+                data[field] = float(data[field])
+            app.logger.info(f"Valores numéricos convertidos com sucesso: {data}")
+        except ValueError as e:
+            app.logger.error(f"Erro ao converter valores numéricos: {e}")
+            return jsonify({'error': 'Valores de horas devem ser numéricos!'}), 400
+
+
+        # Busca do reembolso no banco atualizado
+        app.logger.info("Carregando reembolsos atualizados do banco...")
+        reembolso_dict = CriarReembolso.carregar_funcionarios_reembolso()
+
+        # Busca do reembolso
+        reembolso_id = data['name_funcionario']
+        app.logger.info(f"Buscando informações do reembolso com ID: {reembolso_id}")
+
+
+        # Supondo que reembolso_dict seja uma lista de documentos de reembolsos
+        reembolso = next((f for f in reembolso_dict if f['_id'] == reembolso_id), None)
+
+        if not reembolso:
+            app.logger.error(f"Reembolso não encontrado: {reembolso_id}")
+            return jsonify({'error': 'Reembolso não encontrado!'}), 404
+
+        # Criação do recibo
+        app.logger.info("Iniciando a criação do recibo...")
+        try:
+            reembolso = Sub_total_um_reembolso(
+                data['nome_cargo'], reembolso_id, data['data_inicio'],
+                data['data_fim'], data['data_pagamento']
+            )
+            reembolso.adicionar_horas_trabalhadas(data['horas_trabalhadas'])
+            reembolso.adicionar_horas_noturnas(data['horas_noturnas'])
+            reembolso.adicionar_horas_extras_um(data['horas_extras_um'])
+            reembolso.adicionar_horas_extras_dois(data['horas_extras_dois'])
+            reembolso.adicionar_correcao_positiva(data['correcao_positiva'])
+            reembolso.adicionar_correcao_negativa(data['correcao_negativa'])
+            reembolso.adicionar_valor_por_hora(data['valor_diarias'])
+            reembolso.adicionar_pagamento_vale(data['parcela_vale'])
+            reembolso.adicionar_diferenca_positiva(data['diferenca_calculo'])
+            app.logger.info("Recibo criado com sucesso.")
+        except Exception as e:
+            app.logger.error(f"Erro ao criar o recibo de horas extras: {e}")
+            return jsonify({'error': 'Erro ao criar o recibo de horas extras!'}), 500
+
+        # Geração do PDF
+        app.logger.info("Gerando o PDF do olerite...")
+        try:
+            olerite = Gerar_olerite_reembolso(reembolso)
+            buffer = olerite.gerar_sub_um_reembolso()
+            app.logger.info("PDF gerado com sucesso.")
+        except Exception as e:
+            logger.error(f"Erro ao gerar o PDF: {e}", exc_info=True)
+            return jsonify({'error': 'Erro ao gerar o PDF do recibo. Consulte o administador do sistema!'}), 500
+
+        # Envio do PDF para o cliente
+        app.logger.info("Enviando o PDF gerado para o cliente...")
+        return send_file(buffer, as_attachment=True, download_name='recibo.pdf', mimetype='application/pdf')
+
+    except Exception as e:
+        import traceback
+        app.logger.error(f"Erro inesperado: {e}\n{traceback.format_exc()}")
+        return jsonify({'error': 'Erro ao processar a solicitação!', 'detalhe': str(e)}), 500
+##---------------------------------> Retorna Funcionarios para o Front <-------------------------------##
+
+@app.route('/api/funcionarios/<key>', methods=['GET'])
+def get_funcionario(funcionario_id):
+    funcionario = funcionario_dict.get(funcionario_id)
+    
+    # Verifica se o funcionário existe
+    if funcionario:
+        # Define valores padrão para 'nome_funcionario' e 'nome_funcao' se ausentes
+        funcionario.setdefault('nome_funcionario', 'Nome não cadastrado')
+        funcionario.setdefault('nome_funcao', 'Função não cadastrada')
+        return jsonify(funcionario), 200
+    
+    return jsonify({'error': 'Funcionário não encontrado'}), 404
+
+
+# Função para fazer upload de arquivos para o Firebase Storage
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    try:
+        # Verifica se o arquivo foi enviado na requisição
+        if 'file' not in request.files:
+            return jsonify({"error": "No file part"}), 400
+        file = request.files['file']
+        
+        # Verifica se o arquivo tem um nome
+        if file.filename == '':
+            return jsonify({"error": "No selected file"}), 400
+
+        # Define o caminho local do arquivo (temporário) e o nome do arquivo no Firebase Storage
+        local_file_path = os.path.join("uploads", file.filename)
+        file.save(local_file_path)  # Salva o arquivo localmente no servidor
+        
+        storage_file_name = f"uploads/{file.filename}"  # Nome do arquivo no Firebase Storage
+        
+        # Faz o upload para o Firebase Storage
+        upload_file_to_storage(local_file_path, storage_file_name)
+        
+        return jsonify({"message": f"Arquivo {file.filename} enviado para o Firebase Storage com sucesso!"}), 200
+    
+    except Exception as e:
+        logger.error(f"Erro ao fazer upload: {e}")
+        return jsonify({"error": str(e)}), 500
+
+# Função para adicionar dados ao Firestore (exemplo de uso)
+def add_to_firestore(collection_name, document_id, data):
+    firestore_client = get_firestore_client()
+    firestore_client.collection(collection_name).document(document_id).set(data)
+    print(f"Dados adicionados à coleção {collection_name} com ID {document_id}")
+
+
+# --- Outras rotas simples ---
+@app.route('/')
+def index():
+    api_url = os.getenv('API_URL')  # Pega a URL da API do arquivo .env
+    return render_template('public/index.html', api_url=api_url)
+
+@app.route('/about')
+def about():
+    return "About Page"
+
+# Listar todas as rotas (opcional, apenas para debug)
+@app.route('/routes', methods=['GET'])
+def list_routes():
+    routes = [{"endpoint": rule.endpoint, "rule": rule.rule} for rule in app.url_map.iter_rules()]
+    return jsonify(routes)
+
+
+#f __name__ == "__main__":                       
+ #  app.run(debug=True, port=5000)
+if __name__ == '__main__':
+    app.run(debug=True)

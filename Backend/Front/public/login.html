@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login</title>
+  <style>
+    /* Resetando margens e paddings */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .login-container {
+      background-color: #fff;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      width: 300px;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    .error {
+      color: red;
+      font-size: 14px;
+      margin-top: -10px;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <h2>Login</h2>
+    <form id="login-form">
+      <input type="email" id="email" placeholder="Email" required aria-label="Email">
+      <input type="password" id="password" placeholder="Senha" required aria-label="Senha">
+      <p id="error-message" class="error" style="display: none;"></p>
+      <button type="submit">Entrar</button>
+    </form>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
+  <script>
+    // Configuração do Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyD10AX72GASmdiTl9rhlGrUm7vLHz2yNzw",
+      authDomain: "portal-pagamento-vr3.firebaseapp.com",
+      projectId: "portal-pagamento-vr3",
+      storageBucket: "portal-pagamento-vr3.appspot.com",
+      messagingSenderId: "705628574086",
+      appId: "1:705628574086:web:43a2e4553f309607381c07"
+    };
+
+    // Inicializar Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    // Referência ao formulário de login
+    const loginForm = document.getElementById('login-form');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const errorMessage = document.getElementById('error-message');
+
+    // Função para autenticar o usuário
+    loginForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+
+      auth.signInWithEmailAndPassword(email, password)
+        .then(() => {
+          // Redireciona o usuário em caso de sucesso
+          window.location.href = 'pagina-principal.html';
+        })
+        .catch((error) => {
+          // Exibe a mensagem de erro
+          errorMessage.style.display = 'block';
+          errorMessage.textContent = traduzirErro(error.code);
+          console.error("Erro de login:", error.message);
+        });
+    });
+
+    // Função para traduzir mensagens de erro
+    function traduzirErro(code) {
+      const mensagens = {
+        "auth/user-not-found": "Usuário não encontrado.",
+        "auth/wrong-password": "Senha incorreta.",
+        "auth/invalid-email": "Email inválido.",
+      };
+      return mensagens[code] || "Erro desconhecido.";
+    }
+  </script>
+</body>
+</html>
