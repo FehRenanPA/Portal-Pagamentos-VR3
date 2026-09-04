@@ -156,13 +156,15 @@ class Sub_total_um_ferias:
         dias_uteis = dias_calculados["dias_uteis"]
 
         # Evita divisão por zero caso o período venha zerado por algum motivo                                                                                                                                                                                                 
-        dias_trabalho = dias_uteis - d_s_r
+        dias_trabalhos = self.horas_trabalhadas / (7.33) 
         d_s_r_adicionais = ((pagamento_horas_extras_um +
                         pagamento_horas_extras_dois +
-                        pagamento_adicional_noturno) / dias_trabalho ) * d_s_r
+                        pagamento_adicional_noturno) / dias_trabalhos ) * d_s_r
         
+        print(f"Horas Trabalhadas: {self.horas_trabalhadas } e Hora ({valor_hora_base}) ")
+
         print(f"Dias Úteis: {dias_uteis} ")
-        print(f"Dias trabalhos: {dias_trabalho}")
+        print(f"Dias trabalhos: {dias_trabalhos}")
         print(f"DSR: {d_s_r_adicionais}")
         
         sub_total_um = (pagamento_base + 
